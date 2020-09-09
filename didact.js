@@ -1,4 +1,5 @@
-function createElement(type, props, ...children){
+function createElement(type, props, ...rawChildren){
+    const children = rawChildren.length > 0 ? [].concat(...rawChildren) : []
     return {
         type,
         props: {
@@ -28,7 +29,6 @@ function isAttribute(name){
 
 
 function render(element, parentDom){
-    console.log('element ', element)
     const { type, props } = element 
     const isTextElement = type === 'TEXT_ELEMENT'
     const dom = isTextElement ? document.createTextNode("") : document.createElement(type)
