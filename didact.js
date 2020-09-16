@@ -19,6 +19,30 @@ function createTextElement(text){
     }
 }
 
+function createPublicInstance(element, internalInstance){
+    const { type, props } = element 
+    const publicInstance = new type(props)
+    publicInstance.__internalInstance = internalInstance
+    return publicInstance
+}
+
+class Component {
+    constructor(props){
+        this.props = props
+        this.state = this.state || {}
+    }
+    setState(partialState){
+        this.state = Object.assign({}, this.state, partialState)
+        updateInstance(this.__internalInstance)
+    }
+}
+
+function updateInstance(internalInstance){
+    const parentDom = internalInstance.dom.parentNode 
+    const element = internalInstance.element 
+    reconcile(parentDom, internalInstance, element)
+}
+
 function isEvent(name){
     return name.startsWith('on')
 }
@@ -45,18 +69,28 @@ function reconcile(parentDom, instance, element) {
         // remove instance
         parentDom.removeChild(instance.dom)
         return null;
-    }else if(instance.element.type === element.type){
+    }else if(instance.element.type !== element.type) {
+        // replace instance
+        const newInstance = instantiate(element)
+        parentDom.replaceChild(newInstance.dom, instance.dom)
+        return newInstance
+    }else if(typeof element.type === 'string') {
         // update instance 复用 dom 节点，免去销毁重建的开销
         updateDomProperties(instance.dom, instance.element.props, element.props)
         // 孩子节点的 dom diff
         instance.childInstances = reconcileChildren(instance, element)
         instance.element = element
         return instance
-    }else {
-        // replace instance
-        const newInstance = instantiate(element)
-        parentDom.replaceChild(newInstance.dom, instance.dom)
-        return newInstance
+    } else {
+        // 更新自定义组件
+        instance.publicInstance.props = element.props 
+        const childElement = instance.publicInstance.render()
+        const oldChildInstance = instance.childInstance 
+        const childInstance = reconcile(parentDom, oldChildInstance, childElement)
+        instance.dom = childInstance.dom 
+        instance.childInstance = childInstance 
+        instance.element = element 
+        return instance
     }
 }
 
@@ -76,19 +110,32 @@ function reconcileChildren(instance, element){
 
 function instantiate(element){
     const { type, props } = element 
-    const isTextElement = type === 'TEXT_ELEMENT'
-    const dom = isTextElement ? document.createTextNode("") : document.createElement(type)
+    const isDomElement = typeof type === 'string'
+    if(isDomElement){
+        const isTextElement = type === 'TEXT_ELEMENT'
+        const dom = isTextElement ? document.createTextNode("") : document.createElement(type)
+        
+        updateDomProperties(dom, {}, props)
+
+        // 递归实例化孩子节点 
+        const childElements = props.children || []
+        const childInstances = childElements.map(instantiate)
+        const childDoms = childInstances.map(childInstance => childInstance.dom)
+        childDoms.forEach(childDom => dom.appendChild(childDom))
+
+        const instance = { dom, element, childInstances }
+        return instance
+    }else{
+        // 实例化自定义组件
+        const instance = {}
+        const publicInstance = createPublicInstance(element, instance)
+        const childElement = publicInstance.render()
+        const childInstance = instantiate(childElement)
+        const dom = childInstance.dom 
+        Object.assign(instance, { dom, element, childInstance, publicInstance })
+        return instance
+    }
     
-    updateDomProperties(dom, {}, props)
-
-    // 递归实例化孩子节点 
-    const childElements = props.children || []
-    const childInstances = childElements.map(instantiate)
-    const childDoms = childInstances.map(childInstance => childInstance.dom)
-    childDoms.forEach(childDom => dom.appendChild(childDom))
-
-    const instance = { dom, element, childInstances }
-    return instance
 
 }
 function updateDomProperties(dom, prevProps, nextProps){
@@ -113,7 +160,8 @@ function updateDomProperties(dom, prevProps, nextProps){
 }
 const Didact = {
     createElement,
-    render
+    render,
+    Component
 }
 
 export default Didact
