@@ -46,5 +46,14 @@ class Story extends Didact.Component {
   }
 }
 
-Didact.render(<App stories={stories} />, document.getElementById("root"));
+class App2 extends Didact.Component {
+  constructor(props){
+    super(props)
+  }
+  render(){
+    return <h2>hello app2</h2>
+  }
+}
+const x = <App stories={stories} />
+Didact.render(x, document.getElementById("root"));
 
