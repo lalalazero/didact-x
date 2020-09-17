@@ -1,4 +1,4 @@
-
+// fiber type
 const HOST_COMPONENT = "host"
 const CLASS_COMPONENT = "class"
 const HOST_ROOT ="root"
@@ -8,6 +8,12 @@ let nextUnitOfWork = null
 let pendingCommit = null 
 
 const ENOUGH_TIME = 1 // milliseconds 毫秒
+
+// effect tag
+const PLACEMENT = 1;
+const DELETION = 2;
+const UPDATE = 3;
+
 
 function render(elements, containerDom){
     updateQueue.push({
@@ -64,6 +70,8 @@ function performUnitOfWork(wipFiber){
     }
 }
 
+
+
 function beginWork(wipFiber) {
     if (wipFiber.tag == CLASS_COMPONENT) {
       updateClassComponent(wipFiber);
@@ -71,7 +79,23 @@ function beginWork(wipFiber) {
       updateHostComponent(wipFiber);
     }
   }
+
+
+  function completeWork(fiber) {
+    if (fiber.tag == CLASS_COMPONENT) {
+      fiber.stateNode.__fiber = fiber;
+    }
   
+    if (fiber.parent) {
+      const childEffects = fiber.effects || [];
+      const thisEffect = fiber.effectTag != null ? [fiber] : [];
+      const parentEffects = fiber.parent.effects || [];
+      fiber.parent.effects = parentEffects.concat(childEffects, thisEffect);
+    } else {
+      pendingCommit = fiber;
+    }
+  }
+
   function updateHostComponent(wipFiber) {
     if (!wipFiber.stateNode) {
       wipFiber.stateNode = createDomElement(wipFiber);
@@ -97,6 +121,93 @@ function beginWork(wipFiber) {
   
     const newChildElements = wipFiber.stateNode.render();
     reconcileChildrenArray(wipFiber, newChildElements);
+  }
+
+  function cloneChildFibers(parentFiber) {
+    const oldFiber = parentFiber.alternate;
+    if (!oldFiber.child) {
+      return;
+    }
+  
+    let oldChild = oldFiber.child;
+    let prevChild = null;
+    while (oldChild) {
+      const newChild = {
+        type: oldChild.type,
+        tag: oldChild.tag,
+        stateNode: oldChild.stateNode,
+        props: oldChild.props,
+        partialState: oldChild.partialState,
+        alternate: oldChild,
+        parent: parentFiber
+      };
+      if (prevChild) {
+        prevChild.sibling = newChild;
+      } else {
+        parentFiber.child = newChild;
+      }
+      prevChild = newChild;
+      oldChild = oldChild.sibling;
+    }
+  }
+
+  function arrify(val) {
+    return val == null ? [] : Array.isArray(val) ? val : [val];
+  }
+  
+  function reconcileChildrenArray(wipFiber, newChildElements) {
+    const elements = arrify(newChildElements);
+  
+    let index = 0;
+    let oldFiber = wipFiber.alternate ? wipFiber.alternate.child : null;
+    let newFiber = null;
+    while (index < elements.length || oldFiber != null) {
+      const prevFiber = newFiber;
+      const element = index < elements.length && elements[index];
+      const sameType = oldFiber && element && element.type == oldFiber.type;
+  
+      if (sameType) {
+        newFiber = {
+          type: oldFiber.type,
+          tag: oldFiber.tag,
+          stateNode: oldFiber.stateNode,
+          props: element.props,
+          parent: wipFiber,
+          alternate: oldFiber,
+          partialState: oldFiber.partialState,
+          effectTag: UPDATE
+        };
+      }
+  
+      if (element && !sameType) {
+        newFiber = {
+          type: element.type,
+          tag:
+            typeof element.type === "string" ? HOST_COMPONENT : CLASS_COMPONENT,
+          props: element.props,
+          parent: wipFiber,
+          effectTag: PLACEMENT
+        };
+      }
+  
+      if (oldFiber && !sameType) {
+        oldFiber.effectTag = DELETION;
+        wipFiber.effects = wipFiber.effects || [];
+        wipFiber.effects.push(oldFiber);
+      }
+  
+      if (oldFiber) {
+        oldFiber = oldFiber.sibling;
+      }
+  
+      if (index == 0) {
+        wipFiber.child = newFiber;
+      } else if (prevFiber && element) {
+        prevFiber.sibling = newFiber;
+      }
+  
+      index++;
+    }
   }
 
 function resetNextUnitOfWork() {
@@ -128,6 +239,54 @@ function getRoot(fiber){
 }
 
 
+function commitAllWork(fiber) {
+    fiber.effects.forEach(f => {
+      commitWork(f);
+    });
+    fiber.stateNode._rootContainerFiber = fiber;
+    nextUnitOfWork = null;
+    pendingCommit = null;
+  }
+  
+  function commitWork(fiber) {
+    if (fiber.tag == HOST_ROOT) {
+      return;
+    }
+  
+    let domParentFiber = fiber.parent;
+    while (domParentFiber.tag == CLASS_COMPONENT) {
+      domParentFiber = domParentFiber.parent;
+    }
+    const domParent = domParentFiber.stateNode;
+  
+    if (fiber.effectTag == PLACEMENT && fiber.tag == HOST_COMPONENT) {
+      domParent.appendChild(fiber.stateNode);
+    } else if (fiber.effectTag == UPDATE) {
+      updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
+    } else if (fiber.effectTag == DELETION) {
+      commitDeletion(fiber, domParent);
+    }
+  }
+  
+  function commitDeletion(fiber, domParent) {
+    let node = fiber;
+    while (true) {
+      if (node.tag == CLASS_COMPONENT) {
+        node = node.child;
+        continue;
+      }
+      domParent.removeChild(node.stateNode);
+      while (node != fiber && !node.sibling) {
+        node = node.parent;
+      }
+      if (node == fiber) {
+        return;
+      }
+      node = node.sibling;
+    }
+  }
+
+
 
 
 class Component {
@@ -148,7 +307,14 @@ function createInstance(fiber){
     return instance
 }
 
-
+function createDomElement(fiber) {
+    const isTextElement = fiber.type === "TEXT_ELEMENT";
+    const dom = isTextElement
+      ? document.createTextNode("")
+      : document.createElement(fiber.type);
+    updateDomProperties(dom, [], fiber.props);
+    return dom;
+  }
 
 function createElement(type, props, ...rawChildren){
     const children = rawChildren.length > 0 ? [].concat(...rawChildren) : []
@@ -171,13 +337,6 @@ function createTextElement(text){
     }
 }
 
-function createPublicInstance(element, internalInstance){
-    const { type, props } = element 
-    const publicInstance = new type(props)
-    publicInstance.__internalInstance = internalInstance
-    return publicInstance
-}
-
 function isEvent(name){
     return name.startsWith('on')
 }
@@ -186,93 +345,6 @@ function isAttribute(name){
     return !isEvent(name) && name !== 'children'
 }
 
-let rootInstance = null;
-
-// function render(element, container){
-//     const prevInstance = rootInstance 
-//     const nextInstance = reconcile(container, prevInstance, element) // dom diff 
-//     rootInstance = nextInstance
-// }
-
-function reconcile(parentDom, instance, element) {
-    if(instance === null){
-        // create instance
-        const newInstance = instantiate(element)
-        parentDom.appendChild(newInstance.dom)
-        return newInstance
-    } else if(element === null){
-        // remove instance
-        parentDom.removeChild(instance.dom)
-        return null;
-    }else if(instance.element.type !== element.type) {
-        // replace instance
-        const newInstance = instantiate(element)
-        parentDom.replaceChild(newInstance.dom, instance.dom)
-        return newInstance
-    }else if(typeof element.type === 'string') {
-        // update instance 复用 dom 节点，免去销毁重建的开销
-        updateDomProperties(instance.dom, instance.element.props, element.props)
-        // 孩子节点的 dom diff
-        instance.childInstances = reconcileChildren(instance, element)
-        instance.element = element
-        return instance
-    } else {
-        // 更新自定义组件
-        instance.publicInstance.props = element.props 
-        const childElement = instance.publicInstance.render()
-        const oldChildInstance = instance.childInstance 
-        const childInstance = reconcile(parentDom, oldChildInstance, childElement)
-        instance.dom = childInstance.dom 
-        instance.childInstance = childInstance 
-        instance.element = element 
-        return instance
-    }
-}
-
-function reconcileChildren(instance, element){
-    const { dom, childInstances } = instance 
-    const nextChildElements = element.props.children || []
-    const newChildInstances = []
-    const count = Math.max(childInstances.length, nextChildElements.length)
-    for(let i = 0; i < count; i++){
-        const childInstance = childInstances[i]
-        const childElement = nextChildElements[i]
-        const newChildInstance = reconcile(dom, childInstance, childElement)
-        newChildInstances.push(newChildInstance)
-    }
-    return newChildInstances.filter(instance => instance !== null)
-}
-
-function instantiate(element){
-    const { type, props } = element 
-    const isDomElement = typeof type === 'string'
-    if(isDomElement){
-        const isTextElement = type === 'TEXT_ELEMENT'
-        const dom = isTextElement ? document.createTextNode("") : document.createElement(type)
-        
-        updateDomProperties(dom, {}, props)
-
-        // 递归实例化孩子节点 
-        const childElements = props.children || []
-        const childInstances = childElements.map(instantiate)
-        const childDoms = childInstances.map(childInstance => childInstance.dom)
-        childDoms.forEach(childDom => dom.appendChild(childDom))
-
-        const instance = { dom, element, childInstances }
-        return instance
-    }else{
-        // 实例化自定义组件
-        const instance = {}
-        const publicInstance = createPublicInstance(element, instance)
-        const childElement = publicInstance.render()
-        const childInstance = instantiate(childElement)
-        const dom = childInstance.dom 
-        Object.assign(instance, { dom, element, childInstance, publicInstance })
-        return instance
-    }
-    
-
-}
 function updateDomProperties(dom, prevProps, nextProps){
     // 移除旧的事件监听
     Object.keys(prevProps).filter(isEvent).forEach(name => {

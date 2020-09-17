@@ -1,4 +1,4 @@
-import Didact from '../didact'
+import Didact from '../didact-fiber'
 
 const stories = [
   { name: "Didact introduction", url: "http://bit.ly/2pX7HNn" },
