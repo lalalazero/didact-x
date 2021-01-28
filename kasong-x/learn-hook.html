@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      let isMount = true;
+      let workInProgressHook = null;
+
+      const fiber = {
+        stateNode: App,
+        memorizedState: null,
+      };
+
+      function useState(initialState) {
+        let hook;
+
+        if (isMount) {
+          hook = {
+            memorizedState: initialState,
+            next: null, // next 构成的 hook 单向链表
+            queue: {
+              pending: null, // update 环状链表
+            },
+          };
+          if (!fiber.memorizedState) {
+            // 第一次 mount 的第一个 hook
+            fiber.memorizedState = hook;
+          } else {
+            // 多个 hook
+            workInProgressHook.next = hook;
+          }
+          workInProgressHook = hook;
+        } else {
+          hook = workInProgressHook;
+          workInProgressHook = workInProgressHook.next;
+        }
+
+        let baseState = hook.memorizedState;
+
+        if (hook.queue.pending) {
+          let firstUpdate = hook.queue.pending.next;
+
+          do {
+            const action = firstUpdate.action;
+            baseState = action(baseState);
+            firstUpdate = firstUpdate.next;
+          } while (firstUpdate !== hook.queue.pending);
+
+          hook.queue.pending = null;
+        }
+
+        hook.memorizedState = baseState;
+
+        return [baseState, dispatchAction.bind(null, hook.queue)];
+      }
+
+      function dispatchAction(queue, action) {
+        const update = {
+          action,
+          next: null, // next 构成的 update 环状链表（每个 update 的优先级可能是不一样的，高优先级的 update 应该先响应）
+        };
+
+        if (queue.pending === null) {
+          // u0 -> u0 -> u0
+          update.next = update;
+        } else {
+          // u1 -> u0 -> u1
+          update.next = queue.pending.next;
+          queue.pending.next = update;
+        }
+
+        queue.pending = update;
+
+        schedule();
+      }
+
+      function schedule() {
+        workInProgressHook = fiber.memorizedState;
+        const app = fiber.stateNode();
+        isMount = false;
+
+        return app;
+      }
+
+      function App() {
+        const [num, updateNum] = useState(0);
+        const [num2, updateNum2] = useState(10)
+        console.log("isMount? ", isMount);
+        console.log("num = ", num);
+        console.log('num2 = ', num2)
+
+        return {
+          onClick() {
+            updateNum((num) => num + 1);
+          },
+          onFocus() {
+            updateNum2(num => num + 10)
+          }
+        };
+      }
+
+      window.app = schedule();
+    </script>
+  </body>
+</html>
