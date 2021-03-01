@@ -1,4 +1,5 @@
-
+import { NoFlags } from './ReactFiberFlags'
+import { NoLanes } from './ReactFiberLane'
 
 // This is a constructor function, rather than a POJO constructor, still
 // please ensure we do the following:
@@ -55,6 +56,6 @@ function FiberNode(tag, pendingProps, key, mode) {
   // ...
 }
 
-module.exports = {
+export {
   createFiber,
-};
+}

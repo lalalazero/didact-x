@@ -1,0 +1,9 @@
+{
+  "name": "my-react",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup index.js --format umd --name \"MyReact\" --file my-react.development.js --exports named"
+  }
+}

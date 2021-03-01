@@ -1,4 +1,4 @@
-const { REACT_ELEMENT_TYPE } = require("./ReactSymbols")
+import { REACT_ELEMENT_TYPE } from "./ReactSymbols"
 const hasOwnProperty = Object.prototype.hasOwnProperty
 const RESERVED_PROPS = {
     key: true,
@@ -94,6 +94,6 @@ function createElement(type, config, children) {
     return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current,props)
 }
 
-module.exports = {
+export {
     createElement
 }

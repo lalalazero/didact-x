@@ -1,11 +1,12 @@
-const { createFiber } = require("./ReactFiber");
-const { createLaneMap, NoLanes, NoTimestamp } = require("./ReactFiberLane")
+import { createFiber } from "./ReactFiber"
+import { createLaneMap, NoLanes, NoTimestamp } from "./ReactFiberLane"
+import { HostRoot } from './ReactWorkTags'
 
-const LegacyRoot = 0;
-const BlockingRoot = 1;
-const ConcurrentRoot = 2;
-const enableSuspenseCallback = false;
-const enableCache = false;
+export const LegacyRoot = 0;
+export const BlockingRoot = 1;
+export const ConcurrentRoot = 2;
+export const enableSuspenseCallback = false;
+export const enableCache = false;
 
 const NoMode = 0b00000;
 const StrictMode = 0b00001;
@@ -18,7 +19,7 @@ const ConcurrentMode = 0b00100;
 
 
 
-function createFiberRoot(containerInfo, tag, hydrate, hydrationCallbacks) {
+export function createFiberRoot(containerInfo, tag, hydrate, hydrationCallbacks) {
   const root = new FiberRootNode(containerInfo, tag, hydrate);
 
   if (enableSuspenseCallback) {
@@ -119,9 +120,3 @@ function FiberRootNode(containerInfo, tag, hydrate) {
 
 
 
-module.exports = {
-  createFiberRoot,
-  LegacyRoot,
-  BlockingRoot,
-  ConcurrentRoot,
-};

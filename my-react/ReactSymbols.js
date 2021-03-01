@@ -5,6 +5,6 @@ if (typeof Symbol === "function" && Symbol.for) {
   REACT_ELEMENT_TYPE = symbolFor("react.element");
 }
 
-module.exports = {
+export {
   REACT_ELEMENT_TYPE,
 };

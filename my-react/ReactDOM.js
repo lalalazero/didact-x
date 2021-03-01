@@ -1,4 +1,6 @@
-const { createContainer } = require('./ReactFiberReconciler')
+import { createContainer, updateContainer, getPublicRootInstance } from './ReactFiberReconciler'
+import { LegacyRoot } from './ReactFiberRoot'
+import { unbatchedUpdates } from './ReactFiberWorkLoop'
 
 const ELEMENT_NODE = 1;
 const TEXT_NODE = 3;
@@ -75,6 +77,10 @@ function legacyRenderSubtreeIntoContainer(
   }
 
   return getPublicRootInstance(fiberRoot);
+}
+
+export function getPublicInstance(instance) {
+    return instance;
 }
 
 function legacyCreateRootFromDOMContainer(container, forceHydrate) {
@@ -162,6 +168,6 @@ function listenToNativeEvent(domEventName, isCapturePhaseListener, target) {
 }
 
 
-module.exports = {
+export {
     render
 }

@@ -1,5 +1,5 @@
-const { createElement } = require("./React");
-const { render } = require("./ReactDOM");
+import { createElement } from "./React"
+import { render } from "./ReactDOM"
 
 const React = {
   createElement,
@@ -7,4 +7,9 @@ const React = {
 };
 
 
-module.exports = React
+export default React
+
+export {
+    createElement,
+    render
+}
