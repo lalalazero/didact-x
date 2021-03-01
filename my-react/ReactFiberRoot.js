@@ -8,12 +8,12 @@ export const ConcurrentRoot = 2;
 export const enableSuspenseCallback = false;
 export const enableCache = false;
 
-const NoMode = 0b00000;
-const StrictMode = 0b00001;
+export const NoMode = 0b00000;
+export const StrictMode = 0b00001;
 // TODO: Remove BlockingMode and ConcurrentMode by reading from the root
 // tag instead
-const BlockingMode = 0b00010;
-const ConcurrentMode = 0b00100;
+export const BlockingMode = 0b00010;
+export const ConcurrentMode = 0b00100;
 // const ProfileMode = 0b01000;
 // const DebugTracingMode = 0b10000;
 

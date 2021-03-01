@@ -23,6 +23,7 @@ const {
   unstable_NormalPriority: Scheduler_NormalPriority,
   unstable_LowPriority: Scheduler_LowPriority,
   unstable_IdlePriority: Scheduler_IdlePriority,
+  unstable_getCurrentPriorityLevel: Scheduler_getCurrentPriorityLevel,
 } = Scheduler;
 
 export function flushSyncCallbackQueue() {
@@ -125,6 +126,23 @@ function reactPriorityToSchedulerPriority(reactPriorityLevel) {
       return Scheduler_IdlePriority;
     default:
       console.error("Unknown priority level.");
+  }
+}
+
+export function getCurrentPriorityLevel() {
+  switch(Scheduler_getCurrentPriorityLevel()) {
+    case Scheduler_ImmediatePriority:
+      return ImmediatePriority;
+    case Scheduler_UserBlockingPriority:
+      return UserBlockingPriority;
+    case Scheduler_NormalPriority:
+      return NormalPriority;
+    case Scheduler_LowPriority:
+      return LowPriority;
+    case Scheduler_IdlePriority:
+      return IdlePriority;
+    default:
+      console.error('Unknown priority level.');
   }
 }
 

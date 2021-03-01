@@ -110,7 +110,8 @@
   const NoFlags = /*                      */ 0b00000000000000000000;
 
   const TotalLanes = 31;
-  const NoLanes = 0b0000000000000000000000000000000;
+  const NoLanes = /*                        */ 0b0000000000000000000000000000000;
+  const SyncLane= /*                        */ 0b0000000000000000000000000000001;
   const NoTimestamp = -1;
 
   function createLaneMap(initial){
@@ -288,31 +289,9 @@
     // }
   }
 
-  function createContainer(containerInfo, tag, hydrate, hydrationCallbacks) {
-    return createFiberRoot(containerInfo, tag, hydrate);
-  }
-
-  function updateContainer(element, container, parentComponent, callback) {
-    console.log('to do update container..');
-  }
-
-  function getPublicRootInstance(container) {
-    const containerFiber = container.current;
-    if (!containerFiber.child) {
-      return null;
-    }
-
-    switch(containerFiber.child.tag) {
-      case HostComponent:
-        return getPublicInstance(containerFiber.child.stateNode);
-      default:
-        return containerFiber.child.stateNode;
-    }
-  }
-
   let getCurrentTime;
   const hasPerformanceNow =
-    typeof performance === 'object' && typeof performance.now === 'function';
+    typeof performance === "object" && typeof performance.now === "function";
 
   if (hasPerformanceNow) {
     const localPerformance = performance;
@@ -328,27 +307,33 @@
   const LowPriority = 4;
   const IdlePriority = 5;
 
+  var currentPriorityLevel = NormalPriority;
+
   function unstable_runWithPriority(priorityLevel, eventHandler) {
-      switch (priorityLevel) {
-        case ImmediatePriority:
-        case UserBlockingPriority:
-        case NormalPriority:
-        case LowPriority:
-        case IdlePriority:
-          break;
-        default:
-          priorityLevel = NormalPriority;
-      }
-    
-      var previousPriorityLevel = currentPriorityLevel;
-      currentPriorityLevel = priorityLevel;
-    
-      try {
-        return eventHandler();
-      } finally {
-        currentPriorityLevel = previousPriorityLevel;
-      }
+    switch (priorityLevel) {
+      case ImmediatePriority:
+      case UserBlockingPriority:
+      case NormalPriority:
+      case LowPriority:
+      case IdlePriority:
+        break;
+      default:
+        priorityLevel = NormalPriority;
     }
+
+    var previousPriorityLevel = currentPriorityLevel;
+    currentPriorityLevel = priorityLevel;
+
+    try {
+      return eventHandler();
+    } finally {
+      currentPriorityLevel = previousPriorityLevel;
+    }
+  }
+
+  function unstable_getCurrentPriorityLevel() {
+    return currentPriorityLevel;
+  }
 
   var Scheduler = /*#__PURE__*/Object.freeze({
     __proto__: null,
@@ -358,7 +343,8 @@
     unstable_NormalPriority: NormalPriority,
     unstable_IdlePriority: IdlePriority,
     unstable_LowPriority: LowPriority,
-    unstable_runWithPriority: unstable_runWithPriority
+    unstable_runWithPriority: unstable_runWithPriority,
+    unstable_getCurrentPriorityLevel: unstable_getCurrentPriorityLevel
   });
 
   const {
@@ -369,6 +355,7 @@
     unstable_NormalPriority: Scheduler_NormalPriority,
     unstable_LowPriority: Scheduler_LowPriority,
     unstable_IdlePriority: Scheduler_IdlePriority,
+    unstable_getCurrentPriorityLevel: Scheduler_getCurrentPriorityLevel,
   } = Scheduler;
 
   const initialTimeMs = Scheduler_now();
@@ -378,10 +365,29 @@
 
   const NoContext = /*             */ 0b0000000;
   const BatchedContext = /*               */ 0b0000001;
+  const DiscreteEventContext = /*         */ 0b0000100;
   const LegacyUnbatchedContext = /*       */ 0b0001000;
+  const RenderContext = /*                */ 0b0010000;
+  const CommitContext = /*                */ 0b0100000;
 
   // Describes where we are in the React execution stack
   let executionContext = NoContext;
+  // The lanes we're rendering
+  let workInProgressRootRenderLanes = NoLanes;
+
+
+  // If two updates are scheduled within the same event, we should treat their
+  // event times as simultaneous, even if the actual clock time has advanced
+  // between the first and second call.
+  let currentEventTime = NoTimestamp;
+  let currentEventWipLanes = NoLanes;
+
+  // "Included" lanes refer to lanes that were worked on during this render. It's
+  // slightly different than `renderLanes` because `renderLanes` can change as you
+  // enter and exit an Offscreen tree. This value is the combination of all render
+  // lanes for the entire render phase.
+  let workInProgressRootIncludedLanes = NoLanes;
+
 
   function unbatchedUpdates(fn, a) {
       const prevExecutionContext = executionContext;
@@ -404,6 +410,175 @@
 
   function resetRenderTimer() {
       now() + RENDER_TIMEOUT_MS;
+  }
+
+  function requestEventTime() {
+      if((executionContext & (RenderContext | CommitContext) !== NoContext)) {
+          // We're inside React, so it's fine to read the actual time.
+          return now()
+      }
+      // We're not inside React, so we may be in the middle of a browser event.
+      if (currentEventTime !== NoTimestamp) {
+          // Use the same start time for all updates until we enter React again.
+          return currentEventTime;
+      }
+      // This is the first update since React yielded. Compute a new start time.
+      currentEventTime = now();
+      return currentEventTime;
+  }
+
+  function requestUpdateLane(fiber) {
+      // Special cases
+      const mode = fiber.mode;
+      if ((mode & BlockingMode) === NoMode) {
+          return SyncLane;
+      } else if ((mode & ConcurrentMode) === NoMode) ; else if (!deferRenderPhaseUpdateToNextBatch && (executionContext & RenderContext) !== NoContext && workInProgressRootRenderLanes !== NoLanes) ;
+
+      // The algorithm for assigning an update to a lane should be stable for all
+      // updates at the same priority within the same event. To do this, the inputs
+      // to the algorithm must be the same. For example, we use the `renderLanes`
+      // to avoid choosing a lane that is already in the middle of rendering.
+      //
+      // However, the "included" lanes could be mutated in between updates in the
+      // same event, like if you perform an update inside `flushSync`. Or any other
+      // code path that might call `prepareFreshStack`.
+      //
+      // The trick we use is to cache the first of each of these inputs within an
+      // event. Then reset the cached values once we can be sure the event is over.
+      // Our heuristic for that is whenever we enter a concurrent work loop.
+      //
+      // We'll do the same for `currentEventPendingLanes` below.
+
+      if (currentEventWipLanes === NoLanes) {
+          currentEventWipLanes = workInProgressRootIncludedLanes;
+      }
+
+      // const isTransition = requestCurrentTransition() !== NoTransition;
+      // if (isTransition) {
+      //     if (currentEventPendingLanes !== NoLanes) {
+      //         currentEventPendingLanes = mostRecentlyUpdateRoot !== null ? mostRecentlyUpdateRoot.pendingLanes : NoLanes;
+      //     }
+
+      //     return findTransitionLane(currentEventWipLanes, currentEventPendingLanes)
+      // }
+
+      // TODO: Remove this dependency on the Scheduler priority.
+      // To do that, we're replacing it with an update lane priority.
+      const schedulerPriority = getCurrentPriorityLevel();
+
+      // Find the correct lane based on priorities. Ideally, this would just be
+      // the update lane priority, but for now we're also checking for discrete
+      // updates and falling back to the scheduler priority.
+      let lane;
+      if (
+          // TODO: Temporary. We're removing the concept of discrete updates.
+          (executionContext & DiscreteEventContext) !== NoContext &&
+          schedulerPriority === UserBlockingSchedulerPriority
+      ) {
+          lane = findUpdateLane(InputDiscreteLanePriority, currentEventWipLanes);
+      } else if (
+          decoupleUpdatePriorityFromScheduler &&
+          getCurrentUpdateLanePriority() !== NoLanePriority
+      ) {
+          const currentLanePriority = getCurrentUpdateLanePriority();
+          lane = findUpdateLane(currentLanePriority, currentEventWipLanes);
+      } else {
+          const schedulerLanePriority = schedulerPriorityToLanePriority(
+              schedulerPriority,
+            );
+        
+          lane = findUpdateLane(schedulerLanePriority, currentEventWipLanes);
+      }
+
+      return lane;
+  }
+
+  function createUpdate(eventTime, lane) {
+      const update = {
+          eventTime,
+          lane,
+
+          tag: UpdateState,
+          payload: null,
+          callback: null,
+
+          next: null,
+      };
+
+      return update;
+  }
+
+  function enqueueUpdate(fiber, update) {
+      const updateQueue = fiber.updateQueue;
+      if (updateQueue === null) {
+          // Only occurs if the fiber has been unmounted.
+          return;
+      }
+
+      const sharedQueue = updateQueue.shared;
+      const pending = sharedQueue.pending;
+      if (pending === null) {
+          // This is the first update. Create a circular list.
+          update.next = update;
+      } else {
+          update.next = pending.next;
+          pending.next = update;
+      }
+
+      sharedQueue.pending = update;
+  }
+
+  const UpdateState = 0;
+
+  function createContainer(containerInfo, tag, hydrate, hydrationCallbacks) {
+    return createFiberRoot(containerInfo, tag, hydrate);
+  }
+
+  function updateContainer(element, container, parentComponent, callback) {
+    const current = container.current;
+    const eventTime = requestEventTime();
+
+    const lane = requestUpdateLane(current);
+
+    // if(enableSchedulingProfiler) {
+    //   markRenderScheduled(lane);
+    // }
+
+    // const context = getContextForSubtree(parentComponent)
+    // if (container.context === null) {
+    //   container.context = context;
+    // } else {
+    //   container.pendingContext = context;
+    // }
+
+    const update = createUpdate(eventTime, lane);
+    // Caution: React DevTools currently depends on this property
+    // being called "element".
+    update.payload = {element};
+
+    callback = callback === undefined ? null : callback;
+    if (callback !== null) {
+      update.callback = callback;
+    }
+
+    enqueueUpdate(current, update);
+    scheduleUpdateOnFiber(current, lane, eventTime);
+
+    return lane;
+  }
+
+  function getPublicRootInstance(container) {
+    const containerFiber = container.current;
+    if (!containerFiber.child) {
+      return null;
+    }
+
+    switch(containerFiber.child.tag) {
+      case HostComponent:
+        return getPublicInstance(containerFiber.child.stateNode);
+      default:
+        return containerFiber.child.stateNode;
+    }
   }
 
   const ELEMENT_NODE = 1;
@@ -474,7 +649,7 @@
       // }
 
       // Update
-      updateContainer();
+      updateContainer(children, fiberRoot, parentComponent, callback);
     }
 
     return getPublicRootInstance(fiberRoot);
