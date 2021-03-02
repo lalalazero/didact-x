@@ -1,6 +1,6 @@
 import { createFiberRoot } from './ReactFiberRoot'
 import { HostComponent } from './ReactWorkTags'
-import { getPublicInstance } from './ReactDOM'
+import { getPublicInstance } from './ReactDOMHostConfig'
 import { requestEventTime, requestUpdateLane, scheduleUpdateOnFiber } from './ReactFiberWorkLoop'
 import { createUpdate, enqueueUpdate } from './ReactUpdateQueue'
 

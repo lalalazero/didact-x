@@ -30,6 +30,7 @@ import {
 } from "./ReactFeatureFlags";
 import { HostRoot } from "./ReactWorkTags";
 import { __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED } from "./React";
+import { beginWork } from './ReactFiberBeginWork'
 
 const {
   ReactCurrentOwner,
@@ -87,6 +88,11 @@ let pendingPassiveEffectsLanes = NoLanes;
 const NESTED_UPDATE_LIMIT = 50;
 let nestedUpdateCount = 0;
 let rootWithNestedUpdates = null;
+
+const RootIncomplete = 0;
+
+// Whether to root completed, errored, suspended, etc.
+let workInProgressRootExitStatus = RootIncomplete;
 
 const NESTED_PASSIVE_UPDATE_LIMIT = 50;
 let nestedPassiveUpdateCount = 0;
@@ -531,8 +537,9 @@ function renderRootSync(root, lanes) {
   // If the root or lanes have changed, throw out the existing stack
   // and prepare a fresh one. Otherwise we'll continue where we left off.
   if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
-    prepareFreshStack(root, lanes);
-    startWorkOnPendingInteractions(root, lanes);
+    // prepareFreshStack(root, lanes);
+    // startWorkOnPendingInteractions(root, lanes);
+    console.log('prepareFreshStack')
   }
 
   // const prevInteractions = pushInteractions(root);
@@ -608,4 +615,27 @@ function performUnitOfWork(unitOfWork) {
   }
 
   ReactCurrentOwner.current = null;
+}
+
+function commitRoot(root) {
+    const renderPriorityLevel = getCurrentPriorityLevel();
+    runWithPriority(
+        ImmediateSchedulerPriority,
+        commitRootImpl.bind(null, root, renderPriorityLevel)
+    )
+
+    return null;
+}
+
+function commitRootImpl(root, renderPriorityLevel) {
+    console.error('todo commitRootImpl...')
+    do {
+        // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
+        // means `flushPassiveEffects` will sometimes result in additional
+        // passive effects. So we need to keep flushing in a loop until there are
+        // no more pending effects.
+        // TODO: Might be better if `flushPassiveEffects` did not automatically
+        // flush synchronous work at the end, to avoid factoring hazards like this.
+        flushPassiveEffects();
+      } while (rootWithPendingPassiveEffects !== null);
 }

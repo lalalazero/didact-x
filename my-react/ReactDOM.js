@@ -79,9 +79,7 @@ function legacyRenderSubtreeIntoContainer(
   return getPublicRootInstance(fiberRoot);
 }
 
-export function getPublicInstance(instance) {
-    return instance;
-}
+
 
 function legacyCreateRootFromDOMContainer(container, forceHydrate) {
   return createLegacyRoot(container);

@@ -1,11 +1,37 @@
+export const SyncLanePriority = 15;
+export const SyncBatchedLanePriority = 14;
+
+const InputDiscreteHydrationLanePriority = 13;
+export const InputDiscreteLanePriority = 12;
+
+const InputContinuousHydrationLanePriority = 11;
+export const InputContinuousLanePriority = 10;
+
+const DefaultHydrationLanePriority = 9;
+export const DefaultLanePriority = 8;
+
+const TransitionHydrationPriority = 7;
+export const TransitionPriority = 6;
+
+const RetryLanePriority = 5;
+
+const SelectiveHydrationLanePriority = 4;
+
+const IdleHydrationLanePriority = 3;
+const IdleLanePriority = 2;
+
+const OffscreenLanePriority = 1;
+
+export const NoLanePriority = 0;
+
+
 export const TotalLanes = 31;
 export const NoLanes = /*                        */ 0b0000000000000000000000000000000;
 export const SyncLane = /*                        */ 0b0000000000000000000000000000001;
 export const SyncBatchedLane = /*                */ 0b0000000000000000000000000000010;
 export const NoTimestamp = -1;
+const NonIdleLanes = /*                                 */ 0b0000111111111111111111111111111;
 
-export const InputDiscreteLanePriority = 12;
-export const NoLanePriority = 0;
 
 export function mergeLanes(a, b) {
   return a | b;
@@ -137,6 +163,20 @@ export function pickArbitraryLane(lanes) {
 function getHighestPriorityLane(lanes) {
   return lanes & -lanes;
 }
+
+function getLowestPriorityLane(lanes) {
+    // This finds the most significant non-zero bit.
+    const index = 31 - clz32(lanes);
+    return index < 0 ? NoLanes : 1 << index;
+  }
+  
+  function getEqualOrHigherPriorityLanes(lanes) {
+    return (getLowestPriorityLane(lanes) << 1) - 1;
+  }
+
+// "Registers" used to "return" multiple values
+// Used by getHighestPriorityLanes and getNextLanes:
+let return_highestLanePriority = DefaultLanePriority;
 
 export function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.

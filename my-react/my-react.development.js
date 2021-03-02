@@ -4,11 +4,53 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.MyReact = {}));
 }(this, (function (exports) { 'use strict';
 
-  let REACT_ELEMENT_TYPE = 0xeac7;
+  // ATTENTION
+  // When adding new symbols to this file,
+  // Please consider also adding to 'react-devtools-shared/src/backend/ReactSymbols'
 
-  if (typeof Symbol === "function" && Symbol.for) {
+  // The Symbol used to tag the ReactElement-like types. If there is no native Symbol
+  // nor polyfill, then a plain number is used for performance.
+  let REACT_ELEMENT_TYPE = 0xeac7;
+  let REACT_PORTAL_TYPE = 0xeaca;
+  let REACT_FRAGMENT_TYPE = 0xeacb;
+  let REACT_STRICT_MODE_TYPE = 0xeacc;
+  let REACT_PROFILER_TYPE = 0xead2;
+  let REACT_PROVIDER_TYPE = 0xeacd;
+  let REACT_CONTEXT_TYPE = 0xeace;
+  let REACT_FORWARD_REF_TYPE = 0xead0;
+  let REACT_SUSPENSE_TYPE = 0xead1;
+  let REACT_SUSPENSE_LIST_TYPE = 0xead8;
+  let REACT_MEMO_TYPE = 0xead3;
+  let REACT_LAZY_TYPE = 0xead4;
+  let REACT_FUNDAMENTAL_TYPE = 0xead5;
+  let REACT_SCOPE_TYPE = 0xead7;
+  let REACT_OPAQUE_ID_TYPE = 0xeae0;
+  let REACT_DEBUG_TRACING_MODE_TYPE = 0xeae1;
+  let REACT_OFFSCREEN_TYPE = 0xeae2;
+  let REACT_LEGACY_HIDDEN_TYPE = 0xeae3;
+  let REACT_CACHE_TYPE = 0xeae4;
+
+  if (typeof Symbol === 'function' && Symbol.for) {
     const symbolFor = Symbol.for;
-    REACT_ELEMENT_TYPE = symbolFor("react.element");
+    REACT_ELEMENT_TYPE = symbolFor('react.element');
+    REACT_PORTAL_TYPE = symbolFor('react.portal');
+    REACT_FRAGMENT_TYPE = symbolFor('react.fragment');
+    REACT_STRICT_MODE_TYPE = symbolFor('react.strict_mode');
+    REACT_PROFILER_TYPE = symbolFor('react.profiler');
+    REACT_PROVIDER_TYPE = symbolFor('react.provider');
+    REACT_CONTEXT_TYPE = symbolFor('react.context');
+    REACT_FORWARD_REF_TYPE = symbolFor('react.forward_ref');
+    REACT_SUSPENSE_TYPE = symbolFor('react.suspense');
+    REACT_SUSPENSE_LIST_TYPE = symbolFor('react.suspense_list');
+    REACT_MEMO_TYPE = symbolFor('react.memo');
+    REACT_LAZY_TYPE = symbolFor('react.lazy');
+    REACT_FUNDAMENTAL_TYPE = symbolFor('react.fundamental');
+    REACT_SCOPE_TYPE = symbolFor('react.scope');
+    REACT_OPAQUE_ID_TYPE = symbolFor('react.opaque.id');
+    REACT_DEBUG_TRACING_MODE_TYPE = symbolFor('react.debug_trace_mode');
+    REACT_OFFSCREEN_TYPE = symbolFor('react.offscreen');
+    REACT_LEGACY_HIDDEN_TYPE = symbolFor('react.legacy_hidden');
+    REACT_CACHE_TYPE = symbolFor('react.cache');
   }
 
   const hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -36,9 +78,6 @@
       return element;
   };
 
-  const ReactCurrentOwner = {
-      current: null
-  };
 
   function hasValidKey(config) {
       return config.key !== undefined
@@ -103,8 +142,16 @@
           }
       }
 
-      return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current,props)
+      return ReactElement(type, key, ref, self, source, ReactCurrentOwner$1.current,props)
   }
+
+  const ReactCurrentOwner$1 = {
+      current: null
+  };
+
+  const ReactSharedInternals = {
+      ReactCurrentOwner: ReactCurrentOwner$1
+  };
 
   // Don't change these two values. They're used by React Dev Tools.
   const NoFlags = /*                      */ 0b00000000000000000000;
@@ -116,7 +163,7 @@
   const PlacementAndUpdate = /*           */ Placement | Update;
   const Deletion = /*                     */ 0b00000000000000001000;
   const ChildDeletion = /*                */ 0b00000000000000010000;
-  const ContentReset = /*                 */ 0b00000000000000100000;
+  const ContentReset$1 = /*                 */ 0b00000000000000100000;
   const Callback = /*                     */ 0b00000000000001000000;
   const DidCapture = /*                   */ 0b00000000000010000000;
   const Ref = /*                          */ 0b00000000000100000000;
@@ -126,14 +173,52 @@
   const HydratingAndUpdate = /*           */ Hydrating | Update;
   const Visibility = /*                   */ 0b00000001000000000000;
 
+  // Static tags describe aspects of a fiber that are not specific to a render,
+  // e.g. a fiber uses a passive effect (even if there are no updates on this particular render).
+  // This enables us to defer more work in the unmount case,
+  // since we can defer traversing the tree during layout to look for Passive effects,
+  // and instead rely on the static flag as a signal that there may be cleanup work.
+  const PassiveStatic = /*                */ 0b00100000000000000000;
+
+  // Union of tags that don't get reset on clones.
+  // This allows certain concepts to persist without recalculting them,
+  // e.g. whether a subtree contains passive effects or portals.
+  const StaticMask = PassiveStatic;
+
+  const SyncLanePriority = 15;
+  const SyncBatchedLanePriority = 14;
+
+  const InputDiscreteHydrationLanePriority = 13;
+  const InputDiscreteLanePriority = 12;
+
+  const InputContinuousHydrationLanePriority = 11;
+  const InputContinuousLanePriority = 10;
+
+  const DefaultHydrationLanePriority = 9;
+  const DefaultLanePriority = 8;
+
+  const TransitionHydrationPriority = 7;
+  const TransitionPriority = 6;
+
+  const RetryLanePriority = 5;
+
+  const SelectiveHydrationLanePriority = 4;
+
+  const IdleHydrationLanePriority = 3;
+  const IdleLanePriority = 2;
+
+  const OffscreenLanePriority = 1;
+
+  const NoLanePriority = 0;
+
+
   const TotalLanes = 31;
-  const NoLanes = /*                        */ 0b0000000000000000000000000000000;
+  const NoLanes$1 = /*                        */ 0b0000000000000000000000000000000;
   const SyncLane = /*                        */ 0b0000000000000000000000000000001;
   const SyncBatchedLane = /*                */ 0b0000000000000000000000000000010;
   const NoTimestamp = -1;
+  const NonIdleLanes = /*                                 */ 0b0000111111111111111111111111111;
 
-  const InputDiscreteLanePriority = 12;
-  const NoLanePriority = 0;
 
   function mergeLanes(a, b) {
     return a | b;
@@ -195,6 +280,10 @@
   function laneToIndex(lane) {
     return pickArbitraryLaneIndex(lane);
   }
+
+  function includesSomeLane(a, b) {
+      return (a & b) !== NoLanes$1;
+    }
 
   function findUpdateLane$1(lanePriority, wipLanes) {
     switch (lanePriority) {
@@ -262,6 +351,250 @@
     return lanes & -lanes;
   }
 
+  function getLowestPriorityLane(lanes) {
+      // This finds the most significant non-zero bit.
+      const index = 31 - clz32(lanes);
+      return index < 0 ? NoLanes$1 : 1 << index;
+    }
+    
+    function getEqualOrHigherPriorityLanes(lanes) {
+      return (getLowestPriorityLane(lanes) << 1) - 1;
+    }
+
+  // "Registers" used to "return" multiple values
+  // Used by getHighestPriorityLanes and getNextLanes:
+  let return_highestLanePriority = DefaultLanePriority;
+
+  function getNextLanes(root, wipLanes) {
+      // Early bailout if there's no pending work left.
+      const pendingLanes = root.pendingLanes;
+      if (pendingLanes === NoLanes$1) {
+        return_highestLanePriority = NoLanePriority;
+        return NoLanes$1;
+      }
+    
+      let nextLanes = NoLanes$1;
+      let nextLanePriority = NoLanePriority;
+    
+      const expiredLanes = root.expiredLanes;
+      const suspendedLanes = root.suspendedLanes;
+      const pingedLanes = root.pingedLanes;
+    
+      // Check if any work has expired.
+      if (expiredLanes !== NoLanes$1) {
+        nextLanes = expiredLanes;
+        nextLanePriority = return_highestLanePriority = SyncLanePriority;
+      } else {
+        // Do not work on any idle work until all the non-idle work has finished,
+        // even if the work is suspended.
+        const nonIdlePendingLanes = pendingLanes & NonIdleLanes;
+        if (nonIdlePendingLanes !== NoLanes$1) {
+          const nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
+          if (nonIdleUnblockedLanes !== NoLanes$1) {
+            nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
+            nextLanePriority = return_highestLanePriority;
+          } else {
+            const nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
+            if (nonIdlePingedLanes !== NoLanes$1) {
+              nextLanes = getHighestPriorityLanes(nonIdlePingedLanes);
+              nextLanePriority = return_highestLanePriority;
+            }
+          }
+        } else {
+          // The only remaining work is Idle.
+          const unblockedLanes = pendingLanes & ~suspendedLanes;
+          if (unblockedLanes !== NoLanes$1) {
+            nextLanes = getHighestPriorityLanes(unblockedLanes);
+            nextLanePriority = return_highestLanePriority;
+          } else {
+            if (pingedLanes !== NoLanes$1) {
+              nextLanes = getHighestPriorityLanes(pingedLanes);
+              nextLanePriority = return_highestLanePriority;
+            }
+          }
+        }
+      }
+    
+      if (nextLanes === NoLanes$1) {
+        // This should only be reachable if we're suspended
+        // TODO: Consider warning in this path if a fallback timer is not scheduled.
+        return NoLanes$1;
+      }
+    
+      // If there are higher priority lanes, we'll include them even if they
+      // are suspended.
+      nextLanes = pendingLanes & getEqualOrHigherPriorityLanes(nextLanes);
+    
+      // If we're already in the middle of a render, switching lanes will interrupt
+      // it and we'll lose our progress. We should only do this if the new lanes are
+      // higher priority.
+      if (
+        wipLanes !== NoLanes$1 &&
+        wipLanes !== nextLanes &&
+        // If we already suspended with a delay, then interrupting is fine. Don't
+        // bother waiting until the root is complete.
+        (wipLanes & suspendedLanes) === NoLanes$1
+      ) {
+        getHighestPriorityLanes(wipLanes);
+        const wipLanePriority = return_highestLanePriority;
+        if (nextLanePriority <= wipLanePriority) {
+          return wipLanes;
+        } else {
+          return_highestLanePriority = nextLanePriority;
+        }
+      }
+    
+      // Check for entangled lanes and add them to the batch.
+      //
+      // A lane is said to be entangled with another when it's not allowed to render
+      // in a batch that does not also include the other lane. Typically we do this
+      // when multiple updates have the same source, and we only want to respond to
+      // the most recent event from that source.
+      //
+      // Note that we apply entanglements *after* checking for partial work above.
+      // This means that if a lane is entangled during an interleaved event while
+      // it's already rendering, we won't interrupt it. This is intentional, since
+      // entanglement is usually "best effort": we'll try our best to render the
+      // lanes in the same batch, but it's not worth throwing out partially
+      // completed work in order to do it.
+      //
+      // For those exceptions where entanglement is semantically important, like
+      // useMutableSource, we should ensure that there is no partial work at the
+      // time we apply the entanglement.
+      const entangledLanes = root.entangledLanes;
+      if (entangledLanes !== NoLanes$1) {
+        const entanglements = root.entanglements;
+        let lanes = nextLanes & entangledLanes;
+        while (lanes > 0) {
+          const index = pickArbitraryLaneIndex(lanes);
+          const lane = 1 << index;
+    
+          nextLanes |= entanglements[index];
+    
+          lanes &= ~lane;
+        }
+      }
+    
+      return nextLanes;
+    }
+
+    function getHighestPriorityLanes(lanes) {
+      if ((SyncLane & lanes) !== NoLanes$1) {
+        return_highestLanePriority = SyncLanePriority;
+        return SyncLane;
+      }
+      if ((SyncBatchedLane & lanes) !== NoLanes$1) {
+        return_highestLanePriority = SyncBatchedLanePriority;
+        return SyncBatchedLane;
+      }
+      if ((InputDiscreteHydrationLane & lanes) !== NoLanes$1) {
+        return_highestLanePriority = InputDiscreteHydrationLanePriority;
+        return InputDiscreteHydrationLane;
+      }
+      const inputDiscreteLanes = InputDiscreteLanes & lanes;
+      if (inputDiscreteLanes !== NoLanes$1) {
+        return_highestLanePriority = InputDiscreteLanePriority;
+        return inputDiscreteLanes;
+      }
+      if ((lanes & InputContinuousHydrationLane) !== NoLanes$1) {
+        return_highestLanePriority = InputContinuousHydrationLanePriority;
+        return InputContinuousHydrationLane;
+      }
+      const inputContinuousLanes = InputContinuousLanes & lanes;
+      if (inputContinuousLanes !== NoLanes$1) {
+        return_highestLanePriority = InputContinuousLanePriority;
+        return inputContinuousLanes;
+      }
+      if ((lanes & DefaultHydrationLane) !== NoLanes$1) {
+        return_highestLanePriority = DefaultHydrationLanePriority;
+        return DefaultHydrationLane;
+      }
+      const defaultLanes = DefaultLanes & lanes;
+      if (defaultLanes !== NoLanes$1) {
+        return_highestLanePriority = DefaultLanePriority;
+        return defaultLanes;
+      }
+      if ((lanes & TransitionHydrationLane) !== NoLanes$1) {
+        return_highestLanePriority = TransitionHydrationPriority;
+        return TransitionHydrationLane;
+      }
+      const transitionLanes = TransitionLanes & lanes;
+      if (transitionLanes !== NoLanes$1) {
+        return_highestLanePriority = TransitionPriority;
+        return transitionLanes;
+      }
+      const retryLanes = RetryLanes & lanes;
+      if (retryLanes !== NoLanes$1) {
+        return_highestLanePriority = RetryLanePriority;
+        return retryLanes;
+      }
+      if (lanes & SelectiveHydrationLane) {
+        return_highestLanePriority = SelectiveHydrationLanePriority;
+        return SelectiveHydrationLane;
+      }
+      if ((lanes & IdleHydrationLane) !== NoLanes$1) {
+        return_highestLanePriority = IdleHydrationLanePriority;
+        return IdleHydrationLane;
+      }
+      const idleLanes = IdleLanes & lanes;
+      if (idleLanes !== NoLanes$1) {
+        return_highestLanePriority = IdleLanePriority;
+        return idleLanes;
+      }
+      if ((OffscreenLane & lanes) !== NoLanes$1) {
+        return_highestLanePriority = OffscreenLanePriority;
+        return OffscreenLane;
+      }
+      if (__DEV__) {
+        console.error('Should have found matching lanes. This is a bug in React.');
+      }
+      // This shouldn't be reachable, but as a fallback, return the entire bitmask.
+      return_highestLanePriority = DefaultLanePriority;
+      return lanes;
+    }
+
+  // Updates that occur in the render phase are not officially supported. But when
+  // they do occur, we defer them to a subsequent render by picking a lane that's
+  // not currently rendering. We treat them the same as if they came from an
+  // interleaved event. Remove this flag once we have migrated to the
+  // new behavior.
+  const deferRenderPhaseUpdateToNextBatch = true;
+
+  // Replacement for runWithPriority in React internals.
+  const decoupleUpdatePriorityFromScheduler$1 = false;
+
+  // Flight experiments
+  const enableCache$1 = false;
+
+  // Gather advanced timing metrics for Profiler subtrees.
+  const enableProfilerTimer = false;
+
+  const FunctionComponent = 0;
+  const ClassComponent = 1;
+  const IndeterminateComponent = 2; // Before we know whether it is function or class
+  const HostRoot = 3; // Root of a host tree. Could be nested inside another node.
+  const HostPortal = 4; // A subtree. Could be an entry point to a different renderer.
+  const HostComponent = 5;
+  const HostText$1 = 6;
+  const Fragment = 7;
+  const Mode = 8;
+  const ContextConsumer = 9;
+  const ContextProvider = 10;
+  const ForwardRef = 11;
+  const Profiler = 12;
+  const SuspenseComponent = 13;
+  const MemoComponent = 14;
+  const SimpleMemoComponent = 15;
+  const LazyComponent = 16;
+  const IncompleteClassComponent = 17;
+  const DehydratedFragment = 18;
+  const SuspenseListComponent = 19;
+  const FundamentalComponent = 20;
+  const ScopeComponent = 21;
+  const OffscreenComponent = 22;
+  const LegacyHiddenComponent = 23;
+  const CacheComponent = 24;
+
   // This is a constructor function, rather than a POJO constructor, still
   // please ensure we do the following:
   // 1) Nobody should add any instance methods on this. Instance methods can be
@@ -309,17 +642,93 @@
     this.subtreeFlags = NoFlags;
     this.deletions = null;
 
-    this.lanes = NoLanes;
-    this.childLanes = NoLanes;
+    this.lanes = NoLanes$1;
+    this.childLanes = NoLanes$1;
 
     this.alternate = null;
 
     // ...
   }
 
-  const HostRoot = 3; // Root of a host tree. Could be nested inside another node.
-  const HostComponent = 5;
-  const FunctionComponent = 0;
+  // This is used to create an alternate fiber to do work on.
+  function createWorkInProgress(current, pendingProps) {
+    let workInProgress = current.alternate;
+    if (workInProgress === null) {
+      // We use a double buffering pooling technique because we know that we'll
+      // only ever need at most two versions of a tree. We pool the "other" unused
+      // node that we're free to reuse. This is lazily created to avoid allocating
+      // extra objects for things that are never updated. It also allow us to
+      // reclaim the extra memory if needed.
+      workInProgress = createFiber(
+        current.tag,
+        pendingProps,
+        current.key,
+        current.mode
+      );
+      workInProgress.elementType = current.elementType;
+      workInProgress.type = current.type;
+      workInProgress.stateNode = current.stateNode;
+
+      workInProgress.alternate = current;
+      current.alternate = workInProgress;
+    } else {
+      workInProgress.pendingProps = pendingProps;
+      // Needed because Blocks store data on type.
+      workInProgress.type = current.type;
+
+      // We already have an alternate.
+      // Reset the effect tag.
+      workInProgress.flags = NoFlags;
+
+      // The effects are no longer valid.
+      workInProgress.subtreeFlags = NoFlags;
+      workInProgress.deletions = null;
+
+      if (enableProfilerTimer) {
+        // We intentionally reset, rather than copy, actualDuration & actualStartTime.
+        // This prevents time from endlessly accumulating in new commits.
+        // This has the downside of resetting values for different priority renders,
+        // But works for yielding (the common case) and should support resuming.
+        workInProgress.actualDuration = 0;
+        workInProgress.actualStartTime = -1;
+      }
+    }
+
+    // Reset all effects except static ones.
+    // Static effects are not specific to a render.
+    workInProgress.flags = current.flags & StaticMask;
+    workInProgress.childLanes = current.childLanes;
+    workInProgress.lanes = current.lanes;
+
+    workInProgress.child = current.child;
+    workInProgress.memoizedProps = current.memoizedProps;
+    workInProgress.memoizedState = current.memoizedState;
+    workInProgress.updateQueue = current.updateQueue;
+
+    // Clone the dependencies object. This is mutated during the render phase, so
+    // it cannot be shared with the current fiber.
+    const currentDependencies = current.dependencies;
+    workInProgress.dependencies =
+      currentDependencies === null
+        ? null
+        : {
+            lanes: currentDependencies.lanes,
+            firstContext: currentDependencies.firstContext,
+          };
+
+    // These will be overridden during the parent's reconciliation
+    workInProgress.sibling = current.sibling;
+    workInProgress.index = current.index;
+    workInProgress.ref = current.ref;
+
+    return workInProgress;
+  }
+
+  function createFiberFromText(content, mode, lanes) {
+    const fiber = createFiber(HostText$1, content, null, mode);
+    fiber.lanes = lanes;
+    return fiber;
+  }
 
   const LegacyRoot = 0;
   const BlockingRoot = 1;
@@ -406,17 +815,17 @@
     this.hydrate = hydrate;
     this.callbackNode = null;
   //   this.callbackPriority = NoLanePriority;
-    this.eventTimes = createLaneMap(NoLanes);
+    this.eventTimes = createLaneMap(NoLanes$1);
     this.expirationTimes = createLaneMap(NoTimestamp);
 
-    this.pendingLanes = NoLanes;
-    this.suspendedLanes = NoLanes;
-    this.pingedLanes = NoLanes;
-    this.expiredLanes = NoLanes;
-    this.mutableReadLanes = NoLanes;
-    this.finishedLanes = NoLanes;
-    this.entangledLanes = NoLanes;
-    this.entanglements = createLaneMap(NoLanes);
+    this.pendingLanes = NoLanes$1;
+    this.suspendedLanes = NoLanes$1;
+    this.pingedLanes = NoLanes$1;
+    this.expiredLanes = NoLanes$1;
+    this.mutableReadLanes = NoLanes$1;
+    this.finishedLanes = NoLanes$1;
+    this.entangledLanes = NoLanes$1;
+    this.entanglements = createLaneMap(NoLanes$1);
 
     // if (enableCache) {
     //     this.pooledCache = null;
@@ -435,6 +844,23 @@
     // if (enableSuspenseCallback) {
     //     this.hydrationCallbacks = null;
     // }
+  }
+
+  function getPublicInstance(instance) {
+      return instance;
+  }
+
+  function shouldSetTextContent(type, props) {
+    return (
+      type === 'textarea' ||
+      type === 'option' ||
+      type === 'noscript' ||
+      typeof props.children === 'string' ||
+      typeof props.children === 'number' ||
+      (typeof props.dangerouslySetInnerHTML === 'object' &&
+        props.dangerouslySetInnerHTML !== null &&
+        props.dangerouslySetInnerHTML.__html != null)
+    );
   }
 
   let getCurrentTime;
@@ -486,6 +912,42 @@
     return currentPriorityLevel;
   }
 
+  function shouldYieldToHost() {
+    if (
+      enableIsInputPending &&
+      navigator !== undefined &&
+      navigator.scheduling !== undefined &&
+      navigator.scheduling.isInputPending !== undefined
+    ) {
+      const scheduling = navigator.scheduling;
+      const currentTime = getCurrentTime();
+      if (currentTime >= deadline) {
+        // There's no time left. We may want to yield control of the main
+        // thread, so the browser can perform high priority tasks. The main ones
+        // are painting and user input. If there's a pending paint or a pending
+        // input, then we should yield. But if there's neither, then we can
+        // yield less often while remaining responsive. We'll eventually yield
+        // regardless, since there could be a pending paint that wasn't
+        // accompanied by a call to `requestPaint`, or other main thread tasks
+        // like network events.
+        if (needsPaint || scheduling.isInputPending()) {
+          // There is either a pending paint or a pending input.
+          return true;
+        }
+        // There's no pending input. Only yield if we've reached the max
+        // yield interval.
+        return currentTime >= maxYieldInterval;
+      } else {
+        // There's still time left in the frame.
+        return false;
+      }
+    } else {
+      // `isInputPending` is not available. Since we have no way of knowing if
+      // there's pending input, always yield at the end of the frame.
+      return getCurrentTime() >= deadline;
+    }
+  }
+
   var Scheduler = /*#__PURE__*/Object.freeze({
     __proto__: null,
     get unstable_now () { return getCurrentTime; },
@@ -495,11 +957,12 @@
     unstable_IdlePriority: IdlePriority$1,
     unstable_LowPriority: LowPriority$1,
     unstable_runWithPriority: unstable_runWithPriority,
-    unstable_getCurrentPriorityLevel: unstable_getCurrentPriorityLevel
+    unstable_getCurrentPriorityLevel: unstable_getCurrentPriorityLevel,
+    unstable_shouldYield: shouldYieldToHost
   });
 
   // Replacement for runWithPriority in React internals.
-  const decoupleUpdatePriorityFromScheduler$1 = false;
+  const decoupleUpdatePriorityFromScheduler = false;
 
   // Except for NoPriority, these correspond to Scheduler priorities. We use
   // ascending numbers so we can compare them like numbers. They start at 90 to
@@ -521,7 +984,10 @@
     unstable_LowPriority: Scheduler_LowPriority,
     unstable_IdlePriority: Scheduler_IdlePriority,
     unstable_getCurrentPriorityLevel: Scheduler_getCurrentPriorityLevel,
+    unstable_shouldYield: Scheduler_shouldYield,
   } = Scheduler;
+
+  const shouldYield$1 = Scheduler_shouldYield;
 
   function flushSyncCallbackQueue() {
     // if (immediateQueueCallbackNode !== null) {
@@ -541,7 +1007,7 @@
       // Prevent re-entrancy.
       isFlushingSyncQueue = true;
       let i = 0;
-      if (decoupleUpdatePriorityFromScheduler$1) {
+      if (decoupleUpdatePriorityFromScheduler) {
         // const previousLanePriority = getCurrentUpdateLanePriority()
         // try {
         //     const isSync = true;
@@ -648,15 +1114,179 @@
   const now =
     initialTimeMs < 10000 ? Scheduler_now : () => Scheduler_now() - initialTimeMs;
 
-  // Updates that occur in the render phase are not officially supported. But when
-  // they do occur, we defer them to a subsequent render by picking a lane that's
-  // not currently rendering. We treat them the same as if they came from an
-  // interleaved event. Remove this flag once we have migrated to the
-  // new behavior.
-  const deferRenderPhaseUpdateToNextBatch = true;
+  let didReceiveUpdate = false;
 
-  // Replacement for runWithPriority in React internals.
-  const decoupleUpdatePriorityFromScheduler = false;
+  function beginWork(current, workInProgress, renderLanes) {
+    const updateLanes = workInProgress.lanes;
+
+    if (current !== null) {
+      const oldProps = current.memoizedProps;
+      const newProps = workInProgress.pendingProps;
+
+      if (
+        oldProps !== newProps 
+        // || hasLegacyContextChanged()
+        // Force a re-render if the implementation changed due to hot reload:
+        // || (__DEV__ ? workInProgress.type !== current.type : false)
+      ) {
+        // If props or context changed, mark the fiber as having performed work.
+        // This may be unset if the props are determined to be equal later (memo).
+        didReceiveUpdate = true;
+      } else if (!includesSomeLane(renderLanes, updateLanes)) {
+        didReceiveUpdate = false;
+        // This fiber does not have any pending work. Bailout without entering
+        // the begin phase. There's still some bookkeeping we that needs to be done
+        // in this optimized path, mostly pushing stuff onto the stack.
+        // ...省略
+        console.log("includeSomeLanes");
+      } else {
+        if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {
+          // This is a special case that only exists for legacy mode.
+          // See https://github.com/facebook/react/pull/19216.
+          didReceiveUpdate = true;
+        } else {
+          // An update was scheduled on this fiber, but there are no new props
+          // nor legacy context. Set this to false. If an update queue or context
+          // consumer produces a changed value, it will set this to true. Otherwise,
+          // the component will assume the children have not changed and bail out.
+          didReceiveUpdate = false;
+        }
+      }
+    } else {
+      didReceiveUpdate = false;
+    }
+
+    // Before entering the begin phase, clear pending update priority.
+    // TODO: This assumes that we're about to evaluate the component and process
+    // the update queue. However, there's an exception: SimpleMemoComponent
+    // sometimes bails out later in the begin phase. This indicates that we should
+    // move this assignment out of the common path and into each branch.
+    workInProgress.lanes = NoLanes;
+
+    switch (workInProgress.tag) {
+      case HostRoot:
+        return updateHostRoot(current, workInProgress, renderLanes);
+      case HostComponent:
+        return updateHostComponent(current, workInProgress, renderLanes);
+      case HostText:
+        return updateHostText(current, workInProgress);
+    }
+  }
+
+  function updateHostRoot(current, workInProgress, renderLanes) {
+    // pushHostRootContext(workInProgress)
+    const updateQueue = workInProgress.updateQueue;
+
+    const nextProps = workInProgress.pendingProps;
+    const prevState = workInProgress.memoizedState;
+    const prevChildren = prevState.element;
+    cloneUpdateQueue(current, workInProgress);
+    processUpdateQueue(workInProgress, nextProps, null, renderLanes);
+    const nextState = workInProgress.memoizedState;
+
+    const root = workInProgress.stateNode;
+
+    if (enableCache$1) {
+      // 省略...
+    }
+
+    // Caution: React DevTools currently depends on this property
+    // being called "element".
+    const nextChildren = nextState.element;
+    if (nextChildren === prevChildren) {
+      //   resetHydrationState()
+      return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
+    }
+
+    //   if (root.hydrate && enterHydrationState(workInProgress)) {
+    // 省略...
+    //   }else{
+    reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+    //   resetHydrationState()
+    //   }
+
+    return workInProgress.child;
+  }
+
+  function updateHostComponent(current, workInProgress, renderLanes) {
+    // pushHostContext(workInProgress)
+
+    if (current === null) {
+      // tryToClaimNextHydratableInstance(workInProgress)
+      console.log("tryToClaimNextHydratableInstance");
+    }
+
+    const type = workInProgress.type;
+    const nextProps = workInProgress.pendingProps;
+    const prevProps = current !== null ? current.memoizedProps : null;
+
+    let nextChildren = nextProps.children;
+    const isDirectTextChild = shouldSetTextContent(type, nextProps);
+
+    if (isDirectTextChild) {
+      // We special case a direct text child of a host node. This is a common
+      // case. We won't handle it as a reified child. We will instead handle
+      // this in the host environment that also has access to this prop. That
+      // avoids allocating another HostText fiber and traversing it.
+      nextChildren = null;
+    } else if (prevProps !== null && shouldSetTextContent(type, prevProps)) {
+      // If we're switching from a direct text child to a normal child, or to
+      // empty, we need to schedule the text content to be reset.
+      workInProgress.flags |= ContentReset;
+    }
+
+    // markRef(current, workInProgress)
+    reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+    return workInProgress.child;
+  }
+
+  function updateHostText(current, workInProgress) {
+    if (current === null) {
+      // tryToClaimNextHydratableInstance(workInProgress)
+      console.log("updateHostText..tryToClaimNextHydratableInstance");
+    }
+
+    // Nothing to do here. This is terminal. We'll do the completion step
+    // immediately after.
+    return null;
+  }
+
+  function reconcileChildren(
+    current,
+    workInProgress,
+    nextChildren,
+    renderLanes
+  ) {
+    if (current === null) {
+      // If this is a fresh new component that hasn't been rendered yet, we
+      // won't update its child set by applying minimal side-effects. Instead,
+      // we will add them all to the child before it gets rendered. That means
+      // we can optimize this reconciliation pass by not tracking side-effects.
+      workInProgress.child = mountChildFibers(
+        workInProgress,
+        null,
+        nextChildren,
+        renderLanes
+      );
+    } else {
+      // If the current child is the same as the work in progress, it means that
+      // we haven't yet started any work on these children. Therefore, we use
+      // the clone algorithm to create a copy of all the current children.
+
+      // If we had any progressed work already, that is invalid at this point so
+      // let's throw it out.
+      workInProgress.child = reconcileChildFibers(
+        workInProgress,
+        current.child,
+        nextChildren,
+        renderLanes
+      );
+    }
+  }
+
+  const {
+    ReactCurrentOwner,
+  } = ReactSharedInternals;
 
   const NoContext = /*             */ 0b0000000;
   const BatchedContext = /*               */ 0b0000001;
@@ -674,7 +1304,7 @@
   // The fiber we're working on
   let workInProgress = null;
   // The lanes we're rendering
-  let workInProgressRootRenderLanes = NoLanes;
+  let workInProgressRootRenderLanes = NoLanes$1;
 
   // Stack that allows components to change the render lanes for its subtree
   // This is a superset of the lanes we started working on at the root. The only
@@ -684,32 +1314,37 @@
   //
   // Most things in the work loop should deal with workInProgressRootRenderLanes.
   // Most things in begin/complete phases should deal with subtreeRenderLanes.
-  let subtreeRenderLanes = NoLanes;
+  let subtreeRenderLanes = NoLanes$1;
 
   // If two updates are scheduled within the same event, we should treat their
   // event times as simultaneous, even if the actual clock time has advanced
   // between the first and second call.
   let currentEventTime = NoTimestamp;
-  let currentEventWipLanes = NoLanes;
-  let currentEventPendingLanes = NoLanes;
+  let currentEventWipLanes = NoLanes$1;
+  let currentEventPendingLanes = NoLanes$1;
 
   // "Included" lanes refer to lanes that were worked on during this render. It's
   // slightly different than `renderLanes` because `renderLanes` can change as you
   // enter and exit an Offscreen tree. This value is the combination of all render
   // lanes for the entire render phase.
-  let workInProgressRootIncludedLanes = NoLanes;
+  let workInProgressRootIncludedLanes = NoLanes$1;
   // Lanes that were updated (in an interleaved event) during this render.
-  let workInProgressRootUpdatedLanes = NoLanes;
+  let workInProgressRootUpdatedLanes = NoLanes$1;
 
   let pendingPassiveEffectsRenderPriority = NoPriority;
 
   let rootWithPendingPassiveEffects = null;
-  let pendingPassiveEffectsLanes = NoLanes;
+  let pendingPassiveEffectsLanes = NoLanes$1;
 
   // Use these to prevent an infinite loop of nested updates
   const NESTED_UPDATE_LIMIT = 50;
   let nestedUpdateCount = 0;
   let rootWithNestedUpdates = null;
+
+  const RootIncomplete = 0;
+
+  // Whether to root completed, errored, suspended, etc.
+  let workInProgressRootExitStatus = RootIncomplete;
 
   const NESTED_PASSIVE_UPDATE_LIMIT = 50;
   let nestedPassiveUpdateCount = 0;
@@ -765,11 +1400,13 @@
     if ((mode & BlockingMode) === NoMode) {
       return SyncLane;
     } else if ((mode & ConcurrentMode) === NoMode) {
-      return getCurrentPriorityLevel() === ImmediateSchedulerPriority ? SyncLane : SyncBatchedLane;
+      return getCurrentPriorityLevel() === ImmediateSchedulerPriority
+        ? SyncLane
+        : SyncBatchedLane;
     } else if (
       !deferRenderPhaseUpdateToNextBatch &&
       (executionContext & RenderContext) !== NoContext &&
-      workInProgressRootRenderLanes !== NoLanes
+      workInProgressRootRenderLanes !== NoLanes$1
     ) {
       // This is a render phase update. These are not officially supported. The
       // old behavior is to give this the same "thread" (expiration time) as
@@ -780,7 +1417,7 @@
       // This behavior is only a fallback. The flag only exists until we can roll
       // out the setState warning, since existing code might accidentally rely on
       // the current behavior.
-      console.log('return requestUpdateLane');
+      console.log("return requestUpdateLane");
       // return requestUpdateLane(workInProgressRootRenderLanes);
     }
 
@@ -799,7 +1436,7 @@
     //
     // We'll do the same for `currentEventPendingLanes` below.
 
-    if (currentEventWipLanes === NoLanes) {
+    if (currentEventWipLanes === NoLanes$1) {
       currentEventWipLanes = workInProgressRootIncludedLanes;
     }
 
@@ -827,7 +1464,7 @@
     ) {
       lane = findUpdateLane(InputDiscreteLanePriority, currentEventWipLanes);
     } else if (
-      decoupleUpdatePriorityFromScheduler &&
+      decoupleUpdatePriorityFromScheduler$1 &&
       getCurrentUpdateLanePriority() !== NoLanePriority
     ) {
       // const currentLanePriority = getCurrentUpdateLanePriority();
@@ -850,7 +1487,7 @@
     const root = markUpdateLaneFromFiberToRoot(fiber, lane);
     if (root === null) {
       //   warnAboutUpdateOnUnmountedFiberInDEV(fiber);
-        return null;
+      return null;
     }
 
     // Mark that the root has a pending update.
@@ -904,7 +1541,7 @@
         // This is a legacy edge case. The initial mount of a ReactDOM.render-ed
         // root inside of batchedUpdates should be synchronous, but layout updates
         // should be deferred until the end of the batch.
-        console.log('performSyncWorkOnRoot 111');
+        console.log("performSyncWorkOnRoot");
         performSyncWorkOnRoot(root);
       } else {
         ensureRootIsScheduled(root, eventTime);
@@ -969,6 +1606,82 @@
     //   }
 
     flushPassiveEffects();
+
+    let lanes;
+    let exitStatus;
+    if (
+      root === workInProgressRoot &&
+      includesSomeLane(root.expiredLanes, workInProgressRootRenderLanes)
+    ) {
+      // There's a partial tree, and at least one of its lanes has expired. Finish
+      // rendering it before rendering the rest of the expired work.
+      lanes = workInProgressRootRenderLanes;
+      exitStatus = renderRootSync(root, lanes);
+      if (
+        includesSomeLane(
+          workInProgressRootIncludedLanes,
+          workInProgressRootUpdatedLanes
+        )
+      ) {
+        // The render included lanes that were updated during the render phase.
+        // For example, when unhiding a hidden tree, we include all the lanes
+        // that were previously skipped when the tree was hidden. That set of
+        // lanes is a superset of the lanes we started rendering with.
+        //
+        // Note that this only happens when part of the tree is rendered
+        // concurrently. If the whole tree is rendered synchronously, then there
+        // are no interleaved events.
+        lanes = getNextLanes(root, lanes);
+        exitStatus = renderRootSync(root, lanes);
+      }
+    } else {
+      lanes = getNextLanes(root, NoLanes$1);
+      exitStatus = renderRootSync(root, lanes);
+    }
+
+    // ============ 错误处理 begin ===================
+    //   if (root.tag !== LegacyRoot && exitStatus === RootErrored) {
+    //     executionContext |= RetryAfterError;
+
+    //     // If an error occurred during hydration,
+    //     // discard server response and fall back to client side render.
+    //     if (root.hydrate) {
+    //       root.hydrate = false;
+    //       clearContainer(root.containerInfo);
+    //     }
+
+    //     // If something threw an error, try rendering one more time. We'll render
+    //     // synchronously to block concurrent data mutations, and we'll includes
+    //     // all pending updates are included. If it still fails after the second
+    //     // attempt, we'll give up and commit the resulting tree.
+    //     lanes = getLanesToRetrySynchronouslyOnError(root);
+    //     if (lanes !== NoLanes) {
+    //       exitStatus = renderRootSync(root, lanes);
+    //     }
+    //   }
+
+    //   if (exitStatus === RootFatalErrored) {
+    //     const fatalError = workInProgressRootFatalError;
+    //     prepareFreshStack(root, NoLanes);
+    //     markRootSuspended(root, lanes);
+    //     ensureRootIsScheduled(root, now());
+    //     throw fatalError;
+    //   }
+
+    // ============ 错误处理 end ===================
+
+    // We now have a consistent tree. Because this is a sync render, we
+    // will commit it even if something suspended.
+    const finishedWork = root.current.alternate;
+    root.finishedWork = finishedWork;
+    root.finishedLanes = lanes;
+    commitRoot(root);
+
+    // Before exiting, make sure there's a callback scheduled for the next
+    // pending level.
+    ensureRootIsScheduled(root, now());
+
+    return null;
   }
 
   function flushPassiveEffects() {
@@ -979,18 +1692,18 @@
           ? NormalSchedulerPriority
           : pendingPassiveEffectsRenderPriority;
       pendingPassiveEffectsRenderPriority = NoPriority;
-      if (decoupleUpdatePriorityFromScheduler) {
-      //   const previousLanePriority = getCurrentUpdateLanePriority();
-      //   try {
-      //     setCurrentUpdateLanePriority(
-      //       schedulerPriorityToLanePriority(priorityLevel)
-      //     );
-      //     return runWithPriority(priorityLevel, flushPassiveEffectsImpl);
-      //   } finally {
-      //     setCurrentUpdateLanePriority(previousLanePriority);
-      //   }
+      if (decoupleUpdatePriorityFromScheduler$1) {
+        //   const previousLanePriority = getCurrentUpdateLanePriority();
+        //   try {
+        //     setCurrentUpdateLanePriority(
+        //       schedulerPriorityToLanePriority(priorityLevel)
+        //     );
+        //     return runWithPriority(priorityLevel, flushPassiveEffectsImpl);
+        //   } finally {
+        //     setCurrentUpdateLanePriority(previousLanePriority);
+        //   }
       } else {
-          return runWithPriority(priorityLevel, flushPassiveEffectsImpl)
+        return runWithPriority(priorityLevel, flushPassiveEffectsImpl);
       }
     }
 
@@ -998,40 +1711,40 @@
   }
 
   function flushPassiveEffectsImpl() {
-      if (rootWithPendingPassiveEffects === null) {
-          return false;
-      }
+    if (rootWithPendingPassiveEffects === null) {
+      return false;
+    }
 
-      const root = rootWithPendingPassiveEffects;
-      const lanes = pendingPassiveEffectsLanes;
-      rootWithPendingPassiveEffects = null;
-      pendingPassiveEffectsLanes = NoLanes;
+    const root = rootWithPendingPassiveEffects;
+    const lanes = pendingPassiveEffectsLanes;
+    rootWithPendingPassiveEffects = null;
+    pendingPassiveEffectsLanes = NoLanes$1;
 
-      const prevExecutionContext = executionContext;
-      executionContext |= CommitContext;
-      const prevInteractions = pushInteractions(root);
+    const prevExecutionContext = executionContext;
+    executionContext |= CommitContext;
+    const prevInteractions = pushInteractions(root);
 
-      commitPassiveUnmountEffects(root.current);
-      commitPassiveMountEffects(root, root.current);
+    commitPassiveUnmountEffects(root.current);
+    commitPassiveMountEffects(root, root.current);
 
-      executionContext = prevExecutionContext;
-      flushSyncCallbackQueue();
+    executionContext = prevExecutionContext;
+    flushSyncCallbackQueue();
 
-      // If additional passive effects were scheduled, increment a counter. If this
-      // exceeds the limit, we'll fire a warning.
-      nestedPassiveUpdateCount =
+    // If additional passive effects were scheduled, increment a counter. If this
+    // exceeds the limit, we'll fire a warning.
+    nestedPassiveUpdateCount =
       rootWithPendingPassiveEffects === null ? 0 : nestedPassiveUpdateCount + 1;
 
-      return true;
+    return true;
   }
 
   function pushInteractions(root) {
-      // if (enableSchedulerTracing) {
-      //     const prevInteractions = __interactionsRef.current;
-      //     __interactionsRef.current = root.memoizedInteractions;
-      //     return prevInteractions;
-      // }
-      return null;
+    // if (enableSchedulerTracing) {
+    //     const prevInteractions = __interactionsRef.current;
+    //     __interactionsRef.current = root.memoizedInteractions;
+    //     return prevInteractions;
+    // }
+    return null;
   }
 
   // This is split into a separate function so we can mark a fiber with pending
@@ -1039,33 +1752,121 @@
   // e.g. retrying a Suspense boundary isn't an update, but it does schedule work
   // on a fiber.
   function markUpdateLaneFromFiberToRoot(sourceFiber, lane) {
-      // Update the source fiber's lanes
-      sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
-      let alternate = sourceFiber.alternate;
+    // Update the source fiber's lanes
+    sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
+    let alternate = sourceFiber.alternate;
+    if (alternate !== null) {
+      alternate.lanes = mergeLanes(alternate.lanes, lane);
+    }
+
+    // Walk the parent path to the root and update the child expiration time.
+    let node = sourceFiber;
+    let parent = sourceFiber.return;
+    while (parent !== null) {
+      parent.childLanes = mergeLanes(parent.childLanes, lane);
+      alternate = parent.alternate;
       if (alternate !== null) {
-          alternate.lanes = mergeLanes(alternate.lanes, lane);
+        alternate.childLanes = mergeLanes(alternate.childLanes, lane);
       }
 
-      // Walk the parent path to the root and update the child expiration time.
-      let node= sourceFiber;
-      let parent = sourceFiber.return;
-      while (parent !== null) {
-          parent.childLanes = mergeLanes(parent.childLanes, lane);
-          alternate = parent.alternate;
-          if (alternate !== null) {
-              alternate.childLanes = mergeLanes(alternate.childLanes, lane);
-          }
+      node = parent;
+      parent = parent.return;
+    }
 
-          node = parent;
-          parent = parent.return;
-      }
+    if (node.tag === HostRoot) {
+      const root = node.stateNode;
+      return root;
+    } else {
+      return null;
+    }
+  }
 
-      if (node.tag === HostRoot) {
-          const root = node.stateNode;
-          return root;
-      } else {
-          return null;
+  function renderRootSync(root, lanes) {
+    const prevExecutionContext = executionContext;
+    executionContext |= RenderContext;
+    // const prevDispatcher = pushDispatcher();
+
+    // If the root or lanes have changed, throw out the existing stack
+    // and prepare a fresh one. Otherwise we'll continue where we left off.
+    if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
+      // prepareFreshStack(root, lanes);
+      // startWorkOnPendingInteractions(root, lanes);
+      console.log('prepareFreshStack');
+    }
+
+    // const prevInteractions = pushInteractions(root);
+
+    do {
+      try {
+        workLoopSync();
+        break;
+      } catch (thrownValue) {
+        console.error("workLoopSync throw error", thrownValue);
+        // handleError(root, thrownValue)
       }
+    } while (true);
+
+    // resetContextDependencies();
+
+    executionContext = prevExecutionContext;
+    // popDispatcher(prevDispatcher)
+
+    if (workInProgress !== null) {
+      // This is a sync render, so we should have finished the whole tree.
+      console.error(
+        "Cannot commit an incomplete root. This error is likely caused by a " +
+          "bug in React. Please file an issue."
+      );
+    }
+
+    // Set this to null to indicate there's no in-progress render.
+    workInProgressRoot = null;
+    workInProgressRootRenderLanes = NoLanes$1;
+
+    return workInProgressRootExitStatus;
+  }
+
+  // The work loop is an extremely hot path. Tell Closure not to inline it.
+  /** @noinline */
+  function workLoopSync() {
+    // Already timed out, so perform work without checking if we need to yield.
+    while (workInProgress !== null) {
+      performUnitOfWork(workInProgress);
+    }
+  }
+
+  /** @noinline */
+  function workLoopConcurrent() {
+    // Perform work until Scheduler asks us to yield
+    while (workInProgress !== null && !shouldYield()) {
+      performUnitOfWork(workInProgress);
+    }
+  }
+
+  function performUnitOfWork(unitOfWork) {
+    // The current, flushed, state of this fiber is the alternate. Ideally
+    // nothing should rely on this, but relying on it here means that we don't
+    // need an additional field on the work in progress.
+    const current = unitOfWork.alternate;
+
+    let next;
+    //   if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
+    //     startProfilerTimer(unitOfWork);
+    //     next = beginWork(current, unitOfWork, subtreeRenderLanes);
+    //     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
+    //   } else {
+    next = beginWork(current, unitOfWork, subtreeRenderLanes);
+    //   }
+
+    unitOfWork.memoizedProps = unitOfWork.pendingProps;
+    if (next === null) {
+      // If this doesn't spawn new work, complete the current work.
+      completeUnitOfWork(unitOfWork);
+    } else {
+      workInProgress = next;
+    }
+
+    ReactCurrentOwner.current = null;
   }
 
   function createUpdate(eventTime, lane) {
@@ -1236,9 +2037,7 @@
     return getPublicRootInstance(fiberRoot);
   }
 
-  function getPublicInstance(instance) {
-      return instance;
-  }
+
 
   function legacyCreateRootFromDOMContainer(container, forceHydrate) {
     return createLegacyRoot(container);
