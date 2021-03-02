@@ -9,8 +9,8 @@ export const deferRenderPhaseUpdateToNextBatch = true;
 export const decoupleUpdatePriorityFromScheduler = false;
 
 // Flight experiments
+export const enableLazyElements = false;
 export const enableCache = false;
 
 // Gather advanced timing metrics for Profiler subtrees.
 export const enableProfilerTimer = false;
-

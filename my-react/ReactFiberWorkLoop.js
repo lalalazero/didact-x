@@ -2,6 +2,7 @@ import {
   now,
   flushSyncCallbackQueue,
   NoPriority as NoSchedulerPriority,
+  ImmediatePriority as ImmediateSchedulerPriority,
   runWithPriority,
   getCurrentPriorityLevel,
   UserBlockingPriority as UserBlockingSchedulerPriority,
@@ -30,7 +31,9 @@ import {
 } from "./ReactFeatureFlags";
 import { HostRoot } from "./ReactWorkTags";
 import { __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED } from "./React";
-import { beginWork } from './ReactFiberBeginWork'
+import { beginWork } from "./ReactFiberBeginWork";
+import { createWorkInProgress } from "./ReactFiber";
+import { enqueueInterleavedUpdates } from "./ReactFiberInterleavedUpdates";
 
 const {
   ReactCurrentOwner,
@@ -51,8 +54,16 @@ let executionContext = NoContext;
 let workInProgressRoot = null;
 // The fiber we're working on
 let workInProgress = null;
+
 // The lanes we're rendering
 let workInProgressRootRenderLanes = NoLanes;
+// The work left over by components that were visited during this render. Only
+// includes unprocessed updates, not work in bailed out children.
+let workInProgressRootSkippedLanes = NoLanes;
+// Lanes that were updated (in an interleaved event) during this render.
+let workInProgressRootUpdatedLanes = NoLanes;
+// Lanes that were pinged (in an interleaved event) during this render.
+let workInProgressRootPingedLanes = NoLanes;
 
 // Stack that allows components to change the render lanes for its subtree
 // This is a superset of the lanes we started working on at the root. The only
@@ -76,8 +87,6 @@ let currentEventPendingLanes = NoLanes;
 // enter and exit an Offscreen tree. This value is the combination of all render
 // lanes for the entire render phase.
 let workInProgressRootIncludedLanes = NoLanes;
-// Lanes that were updated (in an interleaved event) during this render.
-let workInProgressRootUpdatedLanes = NoLanes;
 
 let pendingPassiveEffectsRenderPriority = NoSchedulerPriority;
 
@@ -537,9 +546,8 @@ function renderRootSync(root, lanes) {
   // If the root or lanes have changed, throw out the existing stack
   // and prepare a fresh one. Otherwise we'll continue where we left off.
   if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
-    // prepareFreshStack(root, lanes);
+    prepareFreshStack(root, lanes);
     // startWorkOnPendingInteractions(root, lanes);
-    console.log('prepareFreshStack')
   }
 
   // const prevInteractions = pushInteractions(root);
@@ -618,24 +626,58 @@ function performUnitOfWork(unitOfWork) {
 }
 
 function commitRoot(root) {
-    const renderPriorityLevel = getCurrentPriorityLevel();
-    runWithPriority(
-        ImmediateSchedulerPriority,
-        commitRootImpl.bind(null, root, renderPriorityLevel)
-    )
+  const renderPriorityLevel = getCurrentPriorityLevel();
+  runWithPriority(
+    ImmediateSchedulerPriority,
+    commitRootImpl.bind(null, root, renderPriorityLevel)
+  );
 
-    return null;
+  return null;
 }
 
 function commitRootImpl(root, renderPriorityLevel) {
-    console.error('todo commitRootImpl...')
-    do {
-        // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
-        // means `flushPassiveEffects` will sometimes result in additional
-        // passive effects. So we need to keep flushing in a loop until there are
-        // no more pending effects.
-        // TODO: Might be better if `flushPassiveEffects` did not automatically
-        // flush synchronous work at the end, to avoid factoring hazards like this.
-        flushPassiveEffects();
-      } while (rootWithPendingPassiveEffects !== null);
+  console.error("todo commitRootImpl...");
+  do {
+    // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
+    // means `flushPassiveEffects` will sometimes result in additional
+    // passive effects. So we need to keep flushing in a loop until there are
+    // no more pending effects.
+    // TODO: Might be better if `flushPassiveEffects` did not automatically
+    // flush synchronous work at the end, to avoid factoring hazards like this.
+    flushPassiveEffects();
+  } while (rootWithPendingPassiveEffects !== null);
+}
+
+function prepareFreshStack(root, lanes) {
+  root.finishedWork = null;
+  root.finishedLanes = NoLanes;
+
+  const timeoutHandle = root.timeoutHandle;
+  // if (timeoutHandle !== noTimeout) {
+  //   // The root previous suspended and scheduled a timeout to commit a fallback
+  //   // state. Now that we have additional work, cancel the timeout.
+  //   root.timeoutHandle = noTimeout;
+  //   // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
+  //   cancelTimeout(timeoutHandle);
+  // }
+
+  if (workInProgress !== null) {
+    let interruptedWork = workInProgress.return;
+    console.log("unwindInterruptedWork..");
+    // while (interruptedWork !== null) {
+    // unwindInterruptedWork(interruptedWork, workInProgressRootRenderLanes);
+    //   interruptedWork = interruptedWork.return;
+    // }
+  }
+
+  workInProgressRoot = root;
+  workInProgress = createWorkInProgress(root.current, null);
+  workInProgressRootRenderLanes = subtreeRenderLanes = workInProgressRootIncludedLanes = lanes;
+  workInProgressRootExitStatus = RootIncomplete;
+
+  workInProgressRootSkippedLanes = NoLanes;
+  workInProgressRootUpdatedLanes = NoLanes;
+  workInProgressRootPingedLanes = NoLanes;
+
+  enqueueInterleavedUpdates();
 }

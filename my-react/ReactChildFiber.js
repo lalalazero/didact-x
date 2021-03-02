@@ -1,6 +1,7 @@
 import { ChildDeletion } from "./ReactFiberFlags";
 import {
   REACT_ELEMENT_TYPE,
+  REACT_FRAGMENT_TYPE,
   REACT_LAZY_TYPE,
   REACT_PORTAL_TYPE,
 } from "./ReactSymbols";
@@ -12,7 +13,12 @@ import {
   HostText,
   SimpleMemoComponent,
 } from "./ReactWorkTags";
-import { createWorkInProgress, createFiberFromText } from "./ReactFiber";
+import {
+  createWorkInProgress,
+  createFiberFromText,
+  createFiberFromElement,
+} from "./ReactFiber";
+import { enableLazyElements } from "./ReactFeatureFlags";
 
 const isArray = Array.isArray;
 
@@ -308,6 +314,121 @@ function ChildReconciler(shouldTrackSideEffects) {
     const created = createFiberFromText(textContent, returnFiber.mode, lanes);
     created.return = returnFiber;
     return created;
+  }
+
+  function updateTextNode(returnFiber, current, textContent, lanes) {
+    if (current === null || current.tag !== HostText) {
+      // Insert
+      const created = createFiberFromText(textContent, returnFiber.mode, lanes);
+      created.return = returnFiber;
+      return created;
+    } else {
+      // Update
+      const existing = useFiber(current, textContent);
+      existing.return = returnFiber;
+      return existing;
+    }
+  }
+
+  function updateElement(returnFiber, current, element, lanes) {
+    const elementType = element.type;
+    if (elementType === REACT_FRAGMENT_TYPE) {
+      console.log("updateElement REACT_FRAGMENT_TYPE");
+      // return updateFragment(
+      //   returnFiber,
+      //   current,
+      //   element.props.children,
+      //   lanes,
+      //   element.key
+      // )
+    }
+
+    if (current !== null) {
+      if (
+        current.elementType === elementType ||
+        // // Keep this check inline so it only runs on the false path:
+        // (__DEV__
+        //   ? isCompatibleFamilyForHotReloading(current, element)
+        //   : false) ||
+        // Lazy types should reconcile their resolved type.
+        // We need to do this after the Hot Reloading check above,
+        // because hot reloading has different semantics than prod because
+        // it doesn't resuspend. So we can't let the call below suspend.
+        (enableLazyElements &&
+          typeof elementType === "object" &&
+          elementType !== null &&
+          elementType.$$typeof === REACT_LAZY_TYPE)
+        // &&
+        // resolveLazy(elementType) === current.type
+      ) {
+        // Move based on index
+        const existing = useFiber(current, element.props);
+        // existing.ref = coerceRef(returnFiber, current, element)
+        existing.return = returnFiber;
+
+        return existing;
+      }
+    }
+
+    // Insert
+    const created = createFiberFromElement(element, returnFiber.mode, lanes);
+    // created.ref = coerceRef(returnFiber, current, element)
+    created.return = returnFiber;
+    return created;
+  }
+
+  function updateSlot(returnFiber, oldFiber, newChild, lanes) {
+    // Update the fiber if the keys match, otherwise return null.
+    const key = oldFiber !== null ? oldFiber.key : null;
+
+    if (typeof newChild === "string" || typeof newChild === "number") {
+      // Text nodes don't have keys. If the previous node is implicitly keyed
+      // we can continue to replace it without aborting even if it is not a text
+      // node.
+      if (key !== null) {
+        return null;
+      }
+      return updateTextNode(returnFiber, oldFiber, "" + newChild, lanes);
+    }
+
+    if (typeof newChild === "object" && newChild !== null) {
+      switch (newChild.$$typeof) {
+        case REACT_ELEMENT_TYPE: {
+          if (newChild.key === key) {
+            return updateElement(returnFiber, oldFiber, newChild, lanes);
+          } else {
+            return null;
+          }
+        }
+        case REACT_PORTAL_TYPE: {
+          // if (newChild.key === key) {
+          //   return updatePortal(returnFiber, oldFiber, newChild, lanes);
+          // } else {
+          //   return null;
+          // }
+        }
+        case REACT_LAZY_TYPE: {
+          // if (enableLazyElements) {
+          //   const payload = newChild._payload;
+          //   const init = newChild._init;
+          //   return updateSlot(returnFiber, oldFiber, init(payload), lanes);
+          // }
+        }
+      }
+
+      console.log("uncovered updateSlot");
+      // if (isArray(newChild) || getIteratorFn(newChild)) {
+      //   if (key !== null) {
+      //     return null;
+      //   }
+
+      //   return updateFragment(returnFiber, oldFiber, newChild, lanes, null);
+      // }
+
+      // throwOnInvalidObjectType(returnFiber, newChild);
+    }
+
+    return null;
   }
 
   // This API will tag the children with the side-effect of the reconciliation

@@ -13,14 +13,14 @@
   let REACT_ELEMENT_TYPE = 0xeac7;
   let REACT_PORTAL_TYPE = 0xeaca;
   let REACT_FRAGMENT_TYPE = 0xeacb;
-  let REACT_STRICT_MODE_TYPE = 0xeacc;
-  let REACT_PROFILER_TYPE = 0xead2;
-  let REACT_PROVIDER_TYPE = 0xeacd;
-  let REACT_CONTEXT_TYPE = 0xeace;
-  let REACT_FORWARD_REF_TYPE = 0xead0;
-  let REACT_SUSPENSE_TYPE = 0xead1;
-  let REACT_SUSPENSE_LIST_TYPE = 0xead8;
-  let REACT_MEMO_TYPE = 0xead3;
+  let REACT_STRICT_MODE_TYPE$1 = 0xeacc;
+  let REACT_PROFILER_TYPE$1 = 0xead2;
+  let REACT_PROVIDER_TYPE$1 = 0xeacd;
+  let REACT_CONTEXT_TYPE$1 = 0xeace;
+  let REACT_FORWARD_REF_TYPE$1 = 0xead0;
+  let REACT_SUSPENSE_TYPE$1 = 0xead1;
+  let REACT_SUSPENSE_LIST_TYPE$1 = 0xead8;
+  let REACT_MEMO_TYPE$1 = 0xead3;
   let REACT_LAZY_TYPE = 0xead4;
   let REACT_FUNDAMENTAL_TYPE = 0xead5;
   let REACT_SCOPE_TYPE = 0xead7;
@@ -28,21 +28,21 @@
   let REACT_DEBUG_TRACING_MODE_TYPE = 0xeae1;
   let REACT_OFFSCREEN_TYPE = 0xeae2;
   let REACT_LEGACY_HIDDEN_TYPE = 0xeae3;
-  let REACT_CACHE_TYPE = 0xeae4;
+  let REACT_CACHE_TYPE$1 = 0xeae4;
 
   if (typeof Symbol === 'function' && Symbol.for) {
     const symbolFor = Symbol.for;
     REACT_ELEMENT_TYPE = symbolFor('react.element');
     REACT_PORTAL_TYPE = symbolFor('react.portal');
     REACT_FRAGMENT_TYPE = symbolFor('react.fragment');
-    REACT_STRICT_MODE_TYPE = symbolFor('react.strict_mode');
-    REACT_PROFILER_TYPE = symbolFor('react.profiler');
-    REACT_PROVIDER_TYPE = symbolFor('react.provider');
-    REACT_CONTEXT_TYPE = symbolFor('react.context');
-    REACT_FORWARD_REF_TYPE = symbolFor('react.forward_ref');
-    REACT_SUSPENSE_TYPE = symbolFor('react.suspense');
-    REACT_SUSPENSE_LIST_TYPE = symbolFor('react.suspense_list');
-    REACT_MEMO_TYPE = symbolFor('react.memo');
+    REACT_STRICT_MODE_TYPE$1 = symbolFor('react.strict_mode');
+    REACT_PROFILER_TYPE$1 = symbolFor('react.profiler');
+    REACT_PROVIDER_TYPE$1 = symbolFor('react.provider');
+    REACT_CONTEXT_TYPE$1 = symbolFor('react.context');
+    REACT_FORWARD_REF_TYPE$1 = symbolFor('react.forward_ref');
+    REACT_SUSPENSE_TYPE$1 = symbolFor('react.suspense');
+    REACT_SUSPENSE_LIST_TYPE$1 = symbolFor('react.suspense_list');
+    REACT_MEMO_TYPE$1 = symbolFor('react.memo');
     REACT_LAZY_TYPE = symbolFor('react.lazy');
     REACT_FUNDAMENTAL_TYPE = symbolFor('react.fundamental');
     REACT_SCOPE_TYPE = symbolFor('react.scope');
@@ -50,7 +50,7 @@
     REACT_DEBUG_TRACING_MODE_TYPE = symbolFor('react.debug_trace_mode');
     REACT_OFFSCREEN_TYPE = symbolFor('react.offscreen');
     REACT_LEGACY_HIDDEN_TYPE = symbolFor('react.legacy_hidden');
-    REACT_CACHE_TYPE = symbolFor('react.cache');
+    REACT_CACHE_TYPE$1 = symbolFor('react.cache');
   }
 
   const hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -158,9 +158,9 @@
   const PerformedWork = /*                */ 0b00000000000000000001;
 
   // You can change the rest (and add more).
-  const Placement = /*                    */ 0b00000000000000000010;
+  const Placement$1 = /*                    */ 0b00000000000000000010;
   const Update = /*                       */ 0b00000000000000000100;
-  const PlacementAndUpdate = /*           */ Placement | Update;
+  const PlacementAndUpdate = /*           */ Placement$1 | Update;
   const Deletion = /*                     */ 0b00000000000000001000;
   const ChildDeletion = /*                */ 0b00000000000000010000;
   const ContentReset$1 = /*                 */ 0b00000000000000100000;
@@ -184,6 +184,10 @@
   // This allows certain concepts to persist without recalculting them,
   // e.g. whether a subtree contains passive effects or portals.
   const StaticMask = PassiveStatic;
+
+  // TODO (effects) Remove this bit once the new reconciler is synced to the old.
+  const PassiveUnmountPendingDev = /*     */ 0b00001000000000000000;
+  const ForceUpdateForLegacySuspense = /* */ 0b00010000000000000000;
 
   const SyncLanePriority = 15;
   const SyncBatchedLanePriority = 14;
@@ -564,6 +568,7 @@
   const decoupleUpdatePriorityFromScheduler$1 = false;
 
   // Flight experiments
+  const enableLazyElements = false;
   const enableCache$1 = false;
 
   // Gather advanced timing metrics for Profiler subtrees.
@@ -727,6 +732,66 @@
   function createFiberFromText(content, mode, lanes) {
     const fiber = createFiber(HostText$1, content, null, mode);
     fiber.lanes = lanes;
+    return fiber;
+  }
+
+  function createFiberFromElement(element, mode, lanes) {
+    let owner = null;
+    const type = element.type;
+    const key = element.key;
+    const pendingProps = element.props;
+    const fiber = createFiberFromTypeAndProps(
+      type,
+      key,
+      pendingProps,
+      owner,
+      mode,
+      lanes
+    );
+    return fiber;
+  }
+
+  function createFiberFromTypeAndProps(
+    type,
+    key,
+    pendingProps,
+    owner,
+    mode,
+    lanes
+  ) {
+    let fiberTag = IndeterminateComponent;
+    // The resolved type is set if we know that the final type will be. I.e. it's not lazy.
+    let resolvedType = type;
+    if (typeof type === "function") {
+      if (shouldConstruct(type)) {
+        fiberTag = ClassComponent;
+      } else {
+      }
+    } else if (typeof type === "string") {
+      fiberTag = HostComponent;
+    } else {
+      getTag: switch (type) {
+        case REACT_FRAGMENT_TYPE:
+          return createFiberFromFragment(pendingProps.children, mode, lanes, key);
+        // ... 省略 case
+        default: {
+          if (typeof type === "object" && type !== null) {
+            switch (type.$$typeof) {
+              case REACT_PROVIDER_TYPE$1:
+                fiberTag = ContextProvider;
+                break getTag;
+              // ...省略 case
+            }
+          }
+        }
+      }
+    }
+
+    const fiber = createFiber(fiberTag, pendingProps, key, mode);
+    fiber.elementType = type;
+    fiber.type = resolvedType;
+    fiber.lanes = lanes;
+
     return fiber;
   }
 
@@ -1114,6 +1179,585 @@
   const now =
     initialTimeMs < 10000 ? Scheduler_now : () => Scheduler_now() - initialTimeMs;
 
+  const isArray = Array.isArray;
+
+  const mountChildFibers = ChildReconciler(false);
+  const reconcileChildFibers = ChildReconciler(true);
+
+  // This wrapper function exists because I expect to clone the code in each path
+  // to be able to optimize each path individually by branching early. This needs
+  // a compiler or we can do it manually. Helpers that don't need this branching
+  // live outside of this function.
+  function ChildReconciler(shouldTrackSideEffects) {
+    function deleteChild(returnFiber, childToDelete) {
+      if (!shouldTrackSideEffects) {
+        // Noop.
+        return;
+      }
+      const deletions = returnFiber.deletions;
+      if (deletions === null) {
+        returnFiber.deletions = [childToDelete];
+        returnFiber.flags |= ChildDeletion;
+      } else {
+        deletions.push(childToDelete);
+      }
+    }
+    function deleteRemainingChildren(returnFiber, currentFirstChild) {
+      if (!shouldTrackSideEffects) {
+        // Noop.
+        return null;
+      }
+
+      // TODO: For the shouldClone case, this could be micro-optimized a bit by
+      // assuming that after the first child we've already added everything.
+      let childToDelete = currentFirstChild;
+      while (childToDelete !== null) {
+        deleteChild(returnFiber, childToDelete);
+        childToDelete = childToDelete.sibling;
+      }
+      return null;
+    }
+
+    function useFiber(fiber, pendingProps) {
+      // We currently set sibling to null and index to 0 here because it is easy
+      // to forget to do before returning it. E.g. for the single child case.
+      const clone = createWorkInProgress(fiber, pendingProps);
+      clone.index = 0;
+      clone.sibling = null;
+      return clone;
+    }
+
+    function placeSingleChild(newFiber) {
+      // This is simpler for the single child case. We only need to do a
+      // placement for inserting new children.
+      if (shouldTrackSideEffects && newFiber.alternate === null) {
+        newFiber.flags |= Placement;
+      }
+      return newFiber;
+    }
+    function reconcileSingleElement(
+      returnFiber,
+      currentFirstChild,
+      element,
+      lanes
+    ) {
+      const key = element.key;
+      let child = currentFirstChild;
+      while (child !== null) {
+        // TODO: If key === null and child.key === null, then this only applies to
+        // the first item in the list.
+        if (child.key === key) {
+          const elementType = element.type;
+          if (elementType === REACT_FRAGMENT_TYPE) {
+            if (child.tag === Fragment) {
+              deleteRemainingChildren(returnFiber, child.sibling);
+              const existing = useFiber(child, element.props.children);
+              existing.return = returnFiber;
+
+              return existing;
+            }
+          } else {
+            if (
+              child.elementType === elementType ||
+              // ||
+              // // Keep this check inline so it only runs on the false path:
+              // (__DEV__
+              //   ? isCompatibleFamilyForHotReloading(child, element)
+              //   : false)
+              // Lazy types should reconcile their resolved type.
+              // We need to do this after the Hot Reloading check above,
+              // because hot reloading has different semantics than prod because
+              // it doesn't resuspend. So we can't let the call below suspend.
+              (enableLazyElements &&
+                typeof elementType === "object" &&
+                elementType !== null &&
+                elementType.$$typeof === REACT_LAZY_TYPE)
+              //   && resolveLazy(elementType) === child.type
+            ) {
+              deleteRemainingChildren(returnFiber, child.sibling);
+              const existing = useFiber(child, element.props);
+              // existing.ref = coerceRef(returnFiber, child, element);
+              existing.return = returnFiber;
+              return existing;
+            }
+          }
+          // Didn't match;
+          deleteRemainingChildren(returnFiber, child);
+          break;
+        } else {
+          deleteChild(returnFiber, child);
+        }
+        child = child.sibling;
+      }
+
+      if (element.type === REACT_FRAGMENT_TYPE) {
+        // ...省略
+        console.log("createFiberFromFragment");
+      } else {
+        const created = createFiberFromElement(element, returnFiber.mode, lanes);
+        // created.ref = coerceRef(returnFiber, currentFirstChild, element);
+        created.return = returnFiber;
+        return created;
+      }
+    }
+
+    function reconcileChildrenArray(
+      returnFiber,
+      currentFirstChild,
+      newChildren,
+      lanes
+    ) {
+      // This algorithm can't optimize by searching from both ends since we
+      // don't have backpointers on fibers. I'm trying to see how far we can get
+      // with that model. If it ends up not being worth the tradeoffs, we can
+      // add it later.
+
+      // Even with a two ended optimization, we'd want to optimize for the case
+      // where there are few changes and brute force the comparison instead of
+      // going for the Map. It'd like to explore hitting that path first in
+      // forward-only mode and only go for the Map once we notice that we need
+      // lots of look ahead. This doesn't handle reversal as well as two ended
+      // search but that's unusual. Besides, for the two ended optimization to
+      // work on Iterables, we'd need to copy the whole set.
+
+      // In this first iteration, we'll just live with hitting the bad case
+      // (adding everything to a Map) in for every insert/move.
+
+      // If you change this code, also update reconcileChildrenIterator() which
+      // uses the same algorithm.
+
+      let resultingFirstChild = null;
+      let previousNewFiber = null;
+
+      let oldFiber = currentFirstChild;
+      let lastPlacedIndex = 0;
+      let newIdx = 0;
+      let nextOldFiber = null;
+      for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+        if (oldFiber.index > newIdx) {
+          nextOldFiber = oldFiber;
+          oldFiber = null;
+        } else {
+          nextOldFiber = oldFiber.sibling;
+        }
+
+        const newFiber = updateSlot(
+          returnFiber,
+          oldFiber,
+          newChildren[newIdx],
+          lanes
+        );
+        if (newFiber === null) {
+          // TODO: This breaks on empty slots like null children. That's
+          // unfortunate because it triggers the slow path all the time. We need
+          // a better way to communicate whether this was a miss or null,
+          // boolean, undefined, etc.
+          if (oldFiber === null) {
+            oldFiber = nextOldFiber;
+          }
+          break;
+        }
+
+        if (shouldTrackSideEffects) {
+          if (oldFiber && newFiber.alternate === null) {
+            // We matched the slot, but we didn't reuse the existing fiber, so we
+            // need to delete the existing child.
+            deleteChild(returnFiber, oldFiber);
+          }
+        }
+
+        lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+        if (previousNewFiber === null) {
+          // TODO: Move out of the loop. This only happens for the first run.
+          resultingFirstChild = newFiber;
+        } else {
+          // TODO: Defer siblings if we're not at the right index for this slot.
+          // I.e. if we had null values before, then we want to defer this
+          // for each null value. However, we also don't want to call updateSlot
+          // with the previous one.
+          previousNewFiber.sibling = newFiber;
+        }
+        previousNewFiber = newFiber;
+        oldFiber = nextOldFiber;
+      }
+
+      if (newIdx === newChildren.length) {
+        // We've reached the end of the new children. We can delete the rest.
+        deleteRemainingChildren(returnFiber, oldFiber);
+        return resultingFirstChild;
+      }
+
+      if (oldFiber === null) {
+        // If we don't have any more existing children we can choose a fast path
+        // since the rest will all be insertions.
+        for (; newIdx < newChildren.length; newIdx++) {
+          const newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
+          if (newFiber === null) {
+            continue;
+          }
+          lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+          if (previousNewFiber === null) {
+            // TODO: Move out of the loop. This only happens for the first run.
+            resultingFirstChild = newFiber;
+          } else {
+            previousNewFiber.sibling = newFiber;
+          }
+          previousNewFiber = newFiber;
+        }
+        return resultingFirstChild;
+      }
+
+      // Add all children to a key map for quick lookups.
+      const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+
+      // Keep scanning and use the map to restore deleted items as moves.
+      for (; newIdx < newChildren.length; newIdx++) {
+        const newFiber = updateFromMap(
+          existingChildren,
+          returnFiber,
+          newIdx,
+          newChildren[newIdx],
+          lanes
+        );
+        if (newFiber !== null) {
+          if (shouldTrackSideEffects) {
+            if (newFiber.alternate !== null) {
+              // The new fiber is a work in progress, but if there exists a
+              // current, that means that we reused the fiber. We need to delete
+              // it from the child list so that we don't add it to the deletion
+              // list.
+              existingChildren.delete(
+                newFiber.key === null ? newIdx : newFiber.key
+              );
+            }
+          }
+          lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+          if (previousNewFiber === null) {
+            resultingFirstChild = newFiber;
+          } else {
+            previousNewFiber.sibling = newFiber;
+          }
+          previousNewFiber = newFiber;
+        }
+      }
+
+      if (shouldTrackSideEffects) {
+        // Any existing children that weren't consumed above were deleted. We need
+        // to add them to the deletion list.
+        existingChildren.forEach((child) => deleteChild(returnFiber, child));
+      }
+
+      return resultingFirstChild;
+    }
+
+    function reconcileSingleTextNode(
+      returnFiber,
+      currentFirstChild,
+      textContent,
+      lanes
+    ) {
+      // There's no need to check for keys on text nodes since we don't have a
+      // way to define them.
+      if (currentFirstChild !== null && currentFirstChild.tag === HostText$1) {
+        // We already have an existing node so let's just update it and delete
+        // the rest.
+        deleteRemainingChildren(returnFiber, currentFirstChild.sibling);
+        const existing = useFiber(currentFirstChild, textContent);
+        existing.return = returnFiber;
+        return existing;
+      }
+
+      // The existing first child is not a text node so we need to create one
+      // and delete the existing ones.
+      deleteRemainingChildren(returnFiber, currentFirstChild);
+      const created = createFiberFromText(textContent, returnFiber.mode, lanes);
+      created.return = returnFiber;
+      return created;
+    }
+
+    function updateTextNode(returnFiber, current, textContent, lanes) {
+      if (current === null || current.tag !== HostText$1) {
+        // Insert
+        const created = createFiberFromText(textContent, returnFiber.mode, lanes);
+        created.return = returnFiber;
+        return created;
+      } else {
+        // Update
+        const existing = useFiber(current, textContent);
+        existing.return = returnFiber;
+        return existing;
+      }
+    }
+
+    function updateElement(returnFiber, current, element, lanes) {
+      const elementType = element.type;
+      if (elementType === REACT_FRAGMENT_TYPE) {
+        console.log("updateElement REACT_FRAGMENT_TYPE");
+        // return updateFragment(
+        //   returnFiber,
+        //   current,
+        //   element.props.children,
+        //   lanes,
+        //   element.key
+        // )
+      }
+
+      if (current !== null) {
+        if (
+          current.elementType === elementType ||
+          // // Keep this check inline so it only runs on the false path:
+          // (__DEV__
+          //   ? isCompatibleFamilyForHotReloading(current, element)
+          //   : false) ||
+          // Lazy types should reconcile their resolved type.
+          // We need to do this after the Hot Reloading check above,
+          // because hot reloading has different semantics than prod because
+          // it doesn't resuspend. So we can't let the call below suspend.
+          (enableLazyElements &&
+            typeof elementType === "object" &&
+            elementType !== null &&
+            elementType.$$typeof === REACT_LAZY_TYPE)
+          // &&
+          // resolveLazy(elementType) === current.type
+        ) {
+          // Move based on index
+          const existing = useFiber(current, element.props);
+          // existing.ref = coerceRef(returnFiber, current, element)
+          existing.return = returnFiber;
+
+          return existing;
+        }
+      }
+
+      // Insert
+      const created = createFiberFromElement(element, returnFiber.mode, lanes);
+      // created.ref = coerceRef(returnFiber, current, element)
+      created.return = returnFiber;
+      return created;
+    }
+
+    function updateSlot(returnFiber, oldFiber, newChild, lanes) {
+      // Update the fiber if the keys match, otherwise return null.
+      const key = oldFiber !== null ? oldFiber.key : null;
+
+      if (typeof newChild === "string" || typeof newChild === "number") {
+        // Text nodes don't have keys. If the previous node is implicitly keyed
+        // we can continue to replace it without aborting even if it is not a text
+        // node.
+        if (key !== null) {
+          return null;
+        }
+        return updateTextNode(returnFiber, oldFiber, "" + newChild, lanes);
+      }
+
+      if (typeof newChild === "object" && newChild !== null) {
+        switch (newChild.$$typeof) {
+          case REACT_ELEMENT_TYPE: {
+            if (newChild.key === key) {
+              return updateElement(returnFiber, oldFiber, newChild, lanes);
+            } else {
+              return null;
+            }
+          }
+          case REACT_PORTAL_TYPE: {
+            // if (newChild.key === key) {
+            //   return updatePortal(returnFiber, oldFiber, newChild, lanes);
+            // } else {
+            //   return null;
+            // }
+          }
+          case REACT_LAZY_TYPE: {
+            // if (enableLazyElements) {
+            //   const payload = newChild._payload;
+            //   const init = newChild._init;
+            //   return updateSlot(returnFiber, oldFiber, init(payload), lanes);
+            // }
+          }
+        }
+
+        console.log("uncovered updateSlot");
+        // if (isArray(newChild) || getIteratorFn(newChild)) {
+        //   if (key !== null) {
+        //     return null;
+        //   }
+
+        //   return updateFragment(returnFiber, oldFiber, newChild, lanes, null);
+        // }
+
+        // throwOnInvalidObjectType(returnFiber, newChild);
+      }
+
+      return null;
+    }
+
+    // This API will tag the children with the side-effect of the reconciliation
+    // itself. They will be added to the side-effect list as we pass through the
+    // children and the parent.
+    function reconcileChildFibers(
+      returnFiber,
+      currentFirstChild,
+      newChild,
+      lanes
+    ) {
+      // This function is not recursive.
+      // If the top level item is an array, we treat it as a set of children,
+      // not as a fragment. Nested arrays on the other hand will be treated as
+      // fragment nodes. Recursion happens at the normal flow.
+
+      // Handle top level unkeyed fragments as if they were arrays.
+      // This leads to an ambiguity between <>{[...]}</> and <>...</>.
+      // We treat the ambiguous cases above the same.
+      const isUnkeyedTopLevelFragment =
+        typeof newChild === "object" &&
+        newChild !== null &&
+        newChild.type === REACT_FRAGMENT_TYPE &&
+        newChild.key === null;
+      if (isUnkeyedTopLevelFragment) {
+        newChild = newChild.props.children;
+      }
+
+      // handle object types
+      const isObject = typeof newChild === "object" && newChild !== null;
+      if (isObject) {
+        switch (newChild.$$typeof) {
+          case REACT_ELEMENT_TYPE:
+            return placeSingleChild(
+              reconcileSingleElement(
+                returnFiber,
+                currentFirstChild,
+                newChild,
+                lanes
+              )
+            );
+          case REACT_PORTAL_TYPE:
+          // ...省略
+          case REACT_LAZY_TYPE:
+          // ...省略
+          default:
+            console.error("unhandled $$typeof");
+            break;
+        }
+      }
+
+      if (typeof newChild === "string" || typeof newChild === "number") {
+        return placeSingleChild(
+          reconcileSingleTextNode(
+            returnFiber,
+            currentFirstChild,
+            "" + newChild,
+            lanes
+          )
+        );
+      }
+
+      if (isArray(newChild)) {
+        return reconcileChildrenArray(
+          returnFiber,
+          currentFirstChild,
+          newChild,
+          lanes
+        );
+      }
+
+      // if (getIteratorFn(newChild)) {
+      //     return reconcileChildrenIterator(
+      //       returnFiber,
+      //       currentFirstChild,
+      //       newChild,
+      //       lanes,
+      //     );
+      //   }
+
+      if (isObject) {
+        console.error("throwOnInvalidObjectType");
+        // throwOnInvalidObjectType(returnFiber, newChild);
+      }
+
+      if (typeof newChild === "undefined" && !isUnkeyedTopLevelFragment) {
+        // If the new child is undefined, and the return fiber is a composite
+        // component, throw an error. If Fiber return types are disabled,
+        // we already threw above.
+        switch (returnFiber.tag) {
+          case ClassComponent:
+          // Intentionally fall through to the next case, which handles both
+          // functions and classes
+          // eslint-disable-next-lined no-fallthrough
+          case FunctionComponent:
+          case ForwardRef:
+          case SimpleMemoComponent: {
+            console.log(
+              "Nothing was returned from render. This usually means a " +
+                "return statement is missing. Or, to render nothing, " +
+                "return null.",
+              getComponentName(returnFiber.type) || "Component"
+            );
+          }
+        }
+      }
+
+      // Remaining cases are all treated as empty.
+      return deleteRemainingChildren(returnFiber, currentFirstChild);
+    }
+
+    return reconcileChildFibers;
+  }
+
+  function getComponentName(type) {
+    if (type == null) {
+      // Host root, text node or just invalid type.
+      return null;
+    }
+
+    if (typeof type === "function") {
+      return type.displayName || type.name || null;
+    }
+    if (typeof type === "string") {
+      return type;
+    }
+    switch (type) {
+      case REACT_FRAGMENT_TYPE:
+        return "Fragment";
+      case REACT_PORTAL_TYPE:
+        return "Portal";
+      case REACT_PROFILER_TYPE:
+        return "Profiler";
+      case REACT_STRICT_MODE_TYPE:
+        return "StrictMode";
+      case REACT_SUSPENSE_TYPE:
+        return "Suspense";
+      case REACT_SUSPENSE_LIST_TYPE:
+        return "SuspenseList";
+      case REACT_CACHE_TYPE:
+        return "Cache";
+    }
+
+    if (typeof type === "object") {
+      switch (type.$$typeof) {
+        case REACT_CONTEXT_TYPE:
+          const context = type;
+          return getContextName(context) + ".Consumer";
+        case REACT_PROVIDER_TYPE:
+          const provider = type;
+          return getContextName(provider._context) + ".Provider";
+        case REACT_FORWARD_REF_TYPE:
+          return getWrappedName(type, type.render, "ForwardRef");
+        case REACT_MEMO_TYPE:
+          return getComponentName(type.type);
+        case REACT_LAZY_TYPE: {
+          const lazyComponent = type;
+          const payload = lazyComponent._payload;
+          const init = lazyComponent._init;
+          try {
+            return getComponentName(init(payload));
+          } catch (x) {
+            return null;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   let didReceiveUpdate = false;
 
   function beginWork(current, workInProgress, renderLanes) {
@@ -1124,7 +1768,7 @@
       const newProps = workInProgress.pendingProps;
 
       if (
-        oldProps !== newProps 
+        oldProps !== newProps
         // || hasLegacyContextChanged()
         // Force a re-render if the implementation changed due to hot reload:
         // || (__DEV__ ? workInProgress.type !== current.type : false)
@@ -1284,6 +1928,38 @@
     }
   }
 
+  // An array of all update queues that received updates during the current
+  // render. When this render exits, either because it finishes or because it is
+  // interrupted, the interleaved updates will be transfered onto the main part
+  // of the queue.
+  let interleavedQueues = null;
+
+  function enqueueInterleavedUpdates() {
+    // Transfer the interleaved updates onto the main queue. Each queue has a
+    // `pending` field and an `interleaved` field. When they are not null, they
+    // point to the last node in a circular linked list. We need to append the
+    // interleaved list to the end of the pending list by joining them into a
+    // single, circular list.
+    if (interleavedQueues !== null) {
+      for (let i = 0; i < interleavedQueues.length; i++) {
+        const queue = interleavedQueues[i];
+        const lastInterleavedUpdate = queue.interleaved;
+        if (lastInterleavedUpdate !== null) {
+          queue.interleaved = null;
+          const firstInterleavedUpdate = lastInterleavedUpdate.next;
+          const lastPendingUpdate = queue.pending;
+          if (lastPendingUpdate !== null) {
+            const firstPendingUpdate = lastPendingUpdate.next;
+            lastPendingUpdate.next = firstInterleavedUpdate;
+            lastInterleavedUpdate.next = firstPendingUpdatey;
+          }
+          queue.pending = lastInterleavedUpdate;
+        }
+      }
+      interleavedQueues = null;
+    }
+  }
+
   const {
     ReactCurrentOwner,
   } = ReactSharedInternals;
@@ -1303,8 +1979,16 @@
   let workInProgressRoot = null;
   // The fiber we're working on
   let workInProgress = null;
+
   // The lanes we're rendering
   let workInProgressRootRenderLanes = NoLanes$1;
+  // The work left over by components that were visited during this render. Only
+  // includes unprocessed updates, not work in bailed out children.
+  let workInProgressRootSkippedLanes = NoLanes$1;
+  // Lanes that were updated (in an interleaved event) during this render.
+  let workInProgressRootUpdatedLanes = NoLanes$1;
+  // Lanes that were pinged (in an interleaved event) during this render.
+  let workInProgressRootPingedLanes = NoLanes$1;
 
   // Stack that allows components to change the render lanes for its subtree
   // This is a superset of the lanes we started working on at the root. The only
@@ -1328,8 +2012,6 @@
   // enter and exit an Offscreen tree. This value is the combination of all render
   // lanes for the entire render phase.
   let workInProgressRootIncludedLanes = NoLanes$1;
-  // Lanes that were updated (in an interleaved event) during this render.
-  let workInProgressRootUpdatedLanes = NoLanes$1;
 
   let pendingPassiveEffectsRenderPriority = NoPriority;
 
@@ -1400,7 +2082,7 @@
     if ((mode & BlockingMode) === NoMode) {
       return SyncLane;
     } else if ((mode & ConcurrentMode) === NoMode) {
-      return getCurrentPriorityLevel() === ImmediateSchedulerPriority
+      return getCurrentPriorityLevel() === ImmediatePriority
         ? SyncLane
         : SyncBatchedLane;
     } else if (
@@ -1563,7 +2245,7 @@
         // Only updates at user-blocking priority or greater are considered
         // discrete, even inside a discrete event.
         (priorityLevel === UserBlockingPriority ||
-          priorityLevel === ImmediateSchedulerPriority)
+          priorityLevel === ImmediatePriority)
       ) {
         // This is the result of a discrete event. Track the lowest priority
         // discrete update per root so we can flush them early, if needed.
@@ -1789,9 +2471,8 @@
     // If the root or lanes have changed, throw out the existing stack
     // and prepare a fresh one. Otherwise we'll continue where we left off.
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
-      // prepareFreshStack(root, lanes);
+      prepareFreshStack(root, lanes);
       // startWorkOnPendingInteractions(root, lanes);
-      console.log('prepareFreshStack');
     }
 
     // const prevInteractions = pushInteractions(root);
@@ -1867,6 +2548,63 @@
     }
 
     ReactCurrentOwner.current = null;
+  }
+
+  function commitRoot(root) {
+    const renderPriorityLevel = getCurrentPriorityLevel();
+    runWithPriority(
+      ImmediatePriority,
+      commitRootImpl.bind(null, root, renderPriorityLevel)
+    );
+
+    return null;
+  }
+
+  function commitRootImpl(root, renderPriorityLevel) {
+    console.error("todo commitRootImpl...");
+    do {
+      // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
+      // means `flushPassiveEffects` will sometimes result in additional
+      // passive effects. So we need to keep flushing in a loop until there are
+      // no more pending effects.
+      // TODO: Might be better if `flushPassiveEffects` did not automatically
+      // flush synchronous work at the end, to avoid factoring hazards like this.
+      flushPassiveEffects();
+    } while (rootWithPendingPassiveEffects !== null);
+  }
+
+  function prepareFreshStack(root, lanes) {
+    root.finishedWork = null;
+    root.finishedLanes = NoLanes$1;
+
+    const timeoutHandle = root.timeoutHandle;
+    // if (timeoutHandle !== noTimeout) {
+    //   // The root previous suspended and scheduled a timeout to commit a fallback
+    //   // state. Now that we have additional work, cancel the timeout.
+    //   root.timeoutHandle = noTimeout;
+    //   // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
+    //   cancelTimeout(timeoutHandle);
+    // }
+
+    if (workInProgress !== null) {
+      let interruptedWork = workInProgress.return;
+      console.log("unwindInterruptedWork..");
+      // while (interruptedWork !== null) {
+      // unwindInterruptedWork(interruptedWork, workInProgressRootRenderLanes);
+      //   interruptedWork = interruptedWork.return;
+      // }
+    }
+
+    workInProgressRoot = root;
+    workInProgress = createWorkInProgress(root.current, null);
+    workInProgressRootRenderLanes = subtreeRenderLanes = workInProgressRootIncludedLanes = lanes;
+    workInProgressRootExitStatus = RootIncomplete;
+
+    workInProgressRootSkippedLanes = NoLanes$1;
+    workInProgressRootUpdatedLanes = NoLanes$1;
+    workInProgressRootPingedLanes = NoLanes$1;
+
+    enqueueInterleavedUpdates();
   }
 
   function createUpdate(eventTime, lane) {

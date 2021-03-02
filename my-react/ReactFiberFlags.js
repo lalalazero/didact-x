@@ -29,3 +29,7 @@ export const PassiveStatic = /*                */ 0b00100000000000000000;
 // This allows certain concepts to persist without recalculting them,
 // e.g. whether a subtree contains passive effects or portals.
 export const StaticMask = PassiveStatic;
+
+// TODO (effects) Remove this bit once the new reconciler is synced to the old.
+export const PassiveUnmountPendingDev = /*     */ 0b00001000000000000000;
+export const ForceUpdateForLegacySuspense = /* */ 0b00010000000000000000;

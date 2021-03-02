@@ -2,7 +2,9 @@ import { NoFlags } from "./ReactFiberFlags";
 import { includesSomeLane } from "./ReactFiberLane";
 import { HostComponent, HostRoot } from "./ReactWorkTags";
 import { enableCache } from "./ReactFeatureFlags";
-import { shouldSetTextContent } from './ReactDOMHostConfig'
+import { shouldSetTextContent } from "./ReactDOMHostConfig";
+import { ForceUpdateForLegacySuspense } from "./ReactFiberFlags";
+import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 
 let didReceiveUpdate = false;
 
@@ -14,7 +16,7 @@ export function beginWork(current, workInProgress, renderLanes) {
     const newProps = workInProgress.pendingProps;
 
     if (
-      oldProps !== newProps 
+      oldProps !== newProps
       // || hasLegacyContextChanged()
       // Force a re-render if the implementation changed due to hot reload:
       // || (__DEV__ ? workInProgress.type !== current.type : false)

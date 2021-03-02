@@ -1,8 +1,15 @@
 import { NoFlags } from "./ReactFiberFlags";
 import { NoLanes } from "./ReactFiberLane";
 import { enableProfilerTimer } from "./ReactFeatureFlags";
-import { StaticMask } from './ReactFiberFlags'
-import { HostText } from "./ReactWorkTags";
+import { StaticMask } from "./ReactFiberFlags";
+import {
+  ClassComponent,
+  ContextProvider,
+  HostComponent,
+  HostText,
+  IndeterminateComponent,
+} from "./ReactWorkTags";
+import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE } from "./ReactSymbols";
 
 // This is a constructor function, rather than a POJO constructor, still
 // please ensure we do the following:
@@ -138,5 +145,65 @@ export function createWorkInProgress(current, pendingProps) {
 export function createFiberFromText(content, mode, lanes) {
   const fiber = createFiber(HostText, content, null, mode);
   fiber.lanes = lanes;
+  return fiber;
+}
+
+export function createFiberFromElement(element, mode, lanes) {
+  let owner = null;
+  const type = element.type;
+  const key = element.key;
+  const pendingProps = element.props;
+  const fiber = createFiberFromTypeAndProps(
+    type,
+    key,
+    pendingProps,
+    owner,
+    mode,
+    lanes
+  );
+  return fiber;
+}
+
+export function createFiberFromTypeAndProps(
+  type,
+  key,
+  pendingProps,
+  owner,
+  mode,
+  lanes
+) {
+  let fiberTag = IndeterminateComponent;
+  // The resolved type is set if we know that the final type will be. I.e. it's not lazy.
+  let resolvedType = type;
+  if (typeof type === "function") {
+    if (shouldConstruct(type)) {
+      fiberTag = ClassComponent;
+    } else {
+    }
+  } else if (typeof type === "string") {
+    fiberTag = HostComponent;
+  } else {
+    getTag: switch (type) {
+      case REACT_FRAGMENT_TYPE:
+        return createFiberFromFragment(pendingProps.children, mode, lanes, key);
+      // ... 省略 case
+      default: {
+        if (typeof type === "object" && type !== null) {
+          switch (type.$$typeof) {
+            case REACT_PROVIDER_TYPE:
+              fiberTag = ContextProvider;
+              break getTag;
+            // ...省略 case
+          }
+        }
+      }
+    }
+  }
+
+  const fiber = createFiber(fiberTag, pendingProps, key, mode);
+  fiber.elementType = type;
+  fiber.type = resolvedType;
+  fiber.lanes = lanes;
+
   return fiber;
 }
