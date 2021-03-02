@@ -24,9 +24,6 @@ const ReactElement = function(type, key, ref, self, source, owner, props) {
     return element;
 }
 
-const ReactCurrentOwner = {
-    current: null
-}
 
 function hasValidKey(config) {
     return config.key !== undefined
@@ -94,6 +91,15 @@ function createElement(type, config, children) {
     return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current,props)
 }
 
+const ReactCurrentOwner = {
+    current: null
+}
+
+const ReactSharedInternals = {
+    ReactCurrentOwner
+}
+
 export {
-    createElement
+    createElement,
+    ReactSharedInternals as __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
 }

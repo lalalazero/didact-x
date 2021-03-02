@@ -24,7 +24,10 @@ const {
   unstable_LowPriority: Scheduler_LowPriority,
   unstable_IdlePriority: Scheduler_IdlePriority,
   unstable_getCurrentPriorityLevel: Scheduler_getCurrentPriorityLevel,
+  unstable_shouldYield: Scheduler_shouldYield,
 } = Scheduler;
+
+export const shouldYield = Scheduler_shouldYield;
 
 export function flushSyncCallbackQueue() {
   // if (immediateQueueCallbackNode !== null) {

@@ -4,6 +4,6 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rollup index.js --format umd --name \"MyReact\" --file my-react.development.js --exports named"
+    "build": "rollup index.js --format umd --name \"MyReact\" --file my-react.development.js --exports named --no-treeshake --validate"
   }
 }

@@ -21,7 +21,7 @@ export function createLaneMap(initial) {
 }
 
 export function markRootUpdated(root, updateLane, eventTime) {
-  root.pendingLanes != updateLane;
+  root.pendingLanes |= updateLane;
 
   // TODO: Theoretically, any update to any lane can unblock any other lane. But
   // it's not practical to try every single possible combination. We need a
@@ -67,6 +67,10 @@ function pickArbitraryLaneIndex(lanes) {
 function laneToIndex(lane) {
   return pickArbitraryLaneIndex(lane);
 }
+
+export function includesSomeLane(a, b) {
+    return (a & b) !== NoLanes;
+  }
 
 export function findUpdateLane(lanePriority, wipLanes) {
   switch (lanePriority) {
@@ -133,3 +137,191 @@ export function pickArbitraryLane(lanes) {
 function getHighestPriorityLane(lanes) {
   return lanes & -lanes;
 }
+
+export function getNextLanes(root, wipLanes) {
+    // Early bailout if there's no pending work left.
+    const pendingLanes = root.pendingLanes;
+    if (pendingLanes === NoLanes) {
+      return_highestLanePriority = NoLanePriority;
+      return NoLanes;
+    }
+  
+    let nextLanes = NoLanes;
+    let nextLanePriority = NoLanePriority;
+  
+    const expiredLanes = root.expiredLanes;
+    const suspendedLanes = root.suspendedLanes;
+    const pingedLanes = root.pingedLanes;
+  
+    // Check if any work has expired.
+    if (expiredLanes !== NoLanes) {
+      nextLanes = expiredLanes;
+      nextLanePriority = return_highestLanePriority = SyncLanePriority;
+    } else {
+      // Do not work on any idle work until all the non-idle work has finished,
+      // even if the work is suspended.
+      const nonIdlePendingLanes = pendingLanes & NonIdleLanes;
+      if (nonIdlePendingLanes !== NoLanes) {
+        const nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
+        if (nonIdleUnblockedLanes !== NoLanes) {
+          nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
+          nextLanePriority = return_highestLanePriority;
+        } else {
+          const nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
+          if (nonIdlePingedLanes !== NoLanes) {
+            nextLanes = getHighestPriorityLanes(nonIdlePingedLanes);
+            nextLanePriority = return_highestLanePriority;
+          }
+        }
+      } else {
+        // The only remaining work is Idle.
+        const unblockedLanes = pendingLanes & ~suspendedLanes;
+        if (unblockedLanes !== NoLanes) {
+          nextLanes = getHighestPriorityLanes(unblockedLanes);
+          nextLanePriority = return_highestLanePriority;
+        } else {
+          if (pingedLanes !== NoLanes) {
+            nextLanes = getHighestPriorityLanes(pingedLanes);
+            nextLanePriority = return_highestLanePriority;
+          }
+        }
+      }
+    }
+  
+    if (nextLanes === NoLanes) {
+      // This should only be reachable if we're suspended
+      // TODO: Consider warning in this path if a fallback timer is not scheduled.
+      return NoLanes;
+    }
+  
+    // If there are higher priority lanes, we'll include them even if they
+    // are suspended.
+    nextLanes = pendingLanes & getEqualOrHigherPriorityLanes(nextLanes);
+  
+    // If we're already in the middle of a render, switching lanes will interrupt
+    // it and we'll lose our progress. We should only do this if the new lanes are
+    // higher priority.
+    if (
+      wipLanes !== NoLanes &&
+      wipLanes !== nextLanes &&
+      // If we already suspended with a delay, then interrupting is fine. Don't
+      // bother waiting until the root is complete.
+      (wipLanes & suspendedLanes) === NoLanes
+    ) {
+      getHighestPriorityLanes(wipLanes);
+      const wipLanePriority = return_highestLanePriority;
+      if (nextLanePriority <= wipLanePriority) {
+        return wipLanes;
+      } else {
+        return_highestLanePriority = nextLanePriority;
+      }
+    }
+  
+    // Check for entangled lanes and add them to the batch.
+    //
+    // A lane is said to be entangled with another when it's not allowed to render
+    // in a batch that does not also include the other lane. Typically we do this
+    // when multiple updates have the same source, and we only want to respond to
+    // the most recent event from that source.
+    //
+    // Note that we apply entanglements *after* checking for partial work above.
+    // This means that if a lane is entangled during an interleaved event while
+    // it's already rendering, we won't interrupt it. This is intentional, since
+    // entanglement is usually "best effort": we'll try our best to render the
+    // lanes in the same batch, but it's not worth throwing out partially
+    // completed work in order to do it.
+    //
+    // For those exceptions where entanglement is semantically important, like
+    // useMutableSource, we should ensure that there is no partial work at the
+    // time we apply the entanglement.
+    const entangledLanes = root.entangledLanes;
+    if (entangledLanes !== NoLanes) {
+      const entanglements = root.entanglements;
+      let lanes = nextLanes & entangledLanes;
+      while (lanes > 0) {
+        const index = pickArbitraryLaneIndex(lanes);
+        const lane = 1 << index;
+  
+        nextLanes |= entanglements[index];
+  
+        lanes &= ~lane;
+      }
+    }
+  
+    return nextLanes;
+  }
+
+  function getHighestPriorityLanes(lanes) {
+    if ((SyncLane & lanes) !== NoLanes) {
+      return_highestLanePriority = SyncLanePriority;
+      return SyncLane;
+    }
+    if ((SyncBatchedLane & lanes) !== NoLanes) {
+      return_highestLanePriority = SyncBatchedLanePriority;
+      return SyncBatchedLane;
+    }
+    if ((InputDiscreteHydrationLane & lanes) !== NoLanes) {
+      return_highestLanePriority = InputDiscreteHydrationLanePriority;
+      return InputDiscreteHydrationLane;
+    }
+    const inputDiscreteLanes = InputDiscreteLanes & lanes;
+    if (inputDiscreteLanes !== NoLanes) {
+      return_highestLanePriority = InputDiscreteLanePriority;
+      return inputDiscreteLanes;
+    }
+    if ((lanes & InputContinuousHydrationLane) !== NoLanes) {
+      return_highestLanePriority = InputContinuousHydrationLanePriority;
+      return InputContinuousHydrationLane;
+    }
+    const inputContinuousLanes = InputContinuousLanes & lanes;
+    if (inputContinuousLanes !== NoLanes) {
+      return_highestLanePriority = InputContinuousLanePriority;
+      return inputContinuousLanes;
+    }
+    if ((lanes & DefaultHydrationLane) !== NoLanes) {
+      return_highestLanePriority = DefaultHydrationLanePriority;
+      return DefaultHydrationLane;
+    }
+    const defaultLanes = DefaultLanes & lanes;
+    if (defaultLanes !== NoLanes) {
+      return_highestLanePriority = DefaultLanePriority;
+      return defaultLanes;
+    }
+    if ((lanes & TransitionHydrationLane) !== NoLanes) {
+      return_highestLanePriority = TransitionHydrationPriority;
+      return TransitionHydrationLane;
+    }
+    const transitionLanes = TransitionLanes & lanes;
+    if (transitionLanes !== NoLanes) {
+      return_highestLanePriority = TransitionPriority;
+      return transitionLanes;
+    }
+    const retryLanes = RetryLanes & lanes;
+    if (retryLanes !== NoLanes) {
+      return_highestLanePriority = RetryLanePriority;
+      return retryLanes;
+    }
+    if (lanes & SelectiveHydrationLane) {
+      return_highestLanePriority = SelectiveHydrationLanePriority;
+      return SelectiveHydrationLane;
+    }
+    if ((lanes & IdleHydrationLane) !== NoLanes) {
+      return_highestLanePriority = IdleHydrationLanePriority;
+      return IdleHydrationLane;
+    }
+    const idleLanes = IdleLanes & lanes;
+    if (idleLanes !== NoLanes) {
+      return_highestLanePriority = IdleLanePriority;
+      return idleLanes;
+    }
+    if ((OffscreenLane & lanes) !== NoLanes) {
+      return_highestLanePriority = OffscreenLanePriority;
+      return OffscreenLane;
+    }
+    if (__DEV__) {
+      console.error('Should have found matching lanes. This is a bug in React.');
+    }
+    // This shouldn't be reachable, but as a fallback, return the entire bitmask.
+    return_highestLanePriority = DefaultLanePriority;
+    return lanes;
+  }
