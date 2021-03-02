@@ -574,6 +574,9 @@
   // Gather advanced timing metrics for Profiler subtrees.
   const enableProfilerTimer = false;
 
+  // Trace which interactions trigger each commit.
+  const enableSchedulerTracing = false;
+
   const FunctionComponent = 0;
   const ClassComponent = 1;
   const IndeterminateComponent = 2; // Before we know whether it is function or class
@@ -912,17 +915,26 @@
   }
 
   function getPublicInstance(instance) {
-      return instance;
+    return instance;
   }
+
+  // This initialization code may run even on server environments
+  // if a component just imports ReactDOM (e.g. for findDOMNode).
+  // Some environments might not have setTimeout or clearTimeout.
+  const scheduleTimeout =
+    typeof setTimeout === "function" ? setTimeout : undefined;
+  const cancelTimeout =
+    typeof clearTimeout === "function" ? clearTimeout : undefined;
+  const noTimeout = -1;
 
   function shouldSetTextContent(type, props) {
     return (
-      type === 'textarea' ||
-      type === 'option' ||
-      type === 'noscript' ||
-      typeof props.children === 'string' ||
-      typeof props.children === 'number' ||
-      (typeof props.dangerouslySetInnerHTML === 'object' &&
+      type === "textarea" ||
+      type === "option" ||
+      type === "noscript" ||
+      typeof props.children === "string" ||
+      typeof props.children === "number" ||
+      (typeof props.dangerouslySetInnerHTML === "object" &&
         props.dangerouslySetInnerHTML !== null &&
         props.dangerouslySetInnerHTML.__html != null)
     );
@@ -2463,6 +2475,12 @@
     }
   }
 
+  function pushDispatcher() {
+    // const prevDispatcher = ReactCurrentDispatcher.current;
+  }
+
+  function popDispatcher(prevDispatcher) {}
+
   function renderRootSync(root, lanes) {
     const prevExecutionContext = executionContext;
     executionContext |= RenderContext;
@@ -2482,15 +2500,14 @@
         workLoopSync();
         break;
       } catch (thrownValue) {
-        console.error("workLoopSync throw error", thrownValue);
-        // handleError(root, thrownValue)
+        handleError(root, thrownValue);
       }
     } while (true);
 
     // resetContextDependencies();
 
     executionContext = prevExecutionContext;
-    // popDispatcher(prevDispatcher)
+    // popDispatcher(prevDispatcher);
 
     if (workInProgress !== null) {
       // This is a sync render, so we should have finished the whole tree.
@@ -2578,21 +2595,21 @@
     root.finishedLanes = NoLanes$1;
 
     const timeoutHandle = root.timeoutHandle;
-    // if (timeoutHandle !== noTimeout) {
-    //   // The root previous suspended and scheduled a timeout to commit a fallback
-    //   // state. Now that we have additional work, cancel the timeout.
-    //   root.timeoutHandle = noTimeout;
-    //   // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
-    //   cancelTimeout(timeoutHandle);
-    // }
+    if (timeoutHandle !== noTimeout) {
+      // The root previous suspended and scheduled a timeout to commit a fallback
+      // state. Now that we have additional work, cancel the timeout.
+      root.timeoutHandle = noTimeout;
+      // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
+      cancelTimeout(timeoutHandle);
+    }
 
     if (workInProgress !== null) {
       let interruptedWork = workInProgress.return;
       console.log("unwindInterruptedWork..");
-      // while (interruptedWork !== null) {
-      // unwindInterruptedWork(interruptedWork, workInProgressRootRenderLanes);
-      //   interruptedWork = interruptedWork.return;
-      // }
+      while (interruptedWork !== null) {
+        unwindInterruptedWork(interruptedWork, workInProgressRootRenderLanes);
+        interruptedWork = interruptedWork.return;
+      }
     }
 
     workInProgressRoot = root;
@@ -2605,6 +2622,75 @@
     workInProgressRootPingedLanes = NoLanes$1;
 
     enqueueInterleavedUpdates();
+  }
+
+  function startWorkOnPendingInteractions(root, lanes) {
+    if (!enableSchedulerTracing) {
+      return;
+    }
+  }
+
+  function handleError(root, thrownValue) {
+    do {
+      let erroredWork = workInProgress;
+      try {
+        // // Reset module-level state that was set during the render phase.
+        // resetContextDependencies();
+        // resetHooksAfterThrow();
+        // resetCurrentDebugFiberInDEV();
+        // // TODO: I found and added this missing line while investigating a
+        // // separate issue. Write a regression test using string refs.
+        // ReactCurrentOwner.current = null;
+
+        // if (erroredWork === null || erroredWork.return === null) {
+        //   // Expected to be working on a non-root fiber. This is a fatal error
+        //   // because there's no ancestor that can handle it; the root is
+        //   // supposed to capture all errors that weren't caught by an error
+        //   // boundary.
+        //   workInProgressRootExitStatus = RootFatalErrored;
+        //   workInProgressRootFatalError = thrownValue;
+        //   // Set `workInProgress` to null. This represents advancing to the next
+        //   // sibling, or the parent if there are no siblings. But since the root
+        //   // has no siblings nor a parent, we set it to null. Usually this is
+        //   // handled by `completeUnitOfWork` or `unwindWork`, but since we're
+        //   // intentionally not calling those, we need set it here.
+        //   // TODO: Consider calling `unwindWork` to pop the contexts.
+        //   workInProgress = null;
+        //   return;
+        // }
+
+        // if (enableProfilerTimer && erroredWork.mode & ProfileMode) {
+        //   // Record the time spent rendering before an error was thrown. This
+        //   // avoids inaccurate Profiler durations in the case of a
+        //   // suspended render.
+        //   stopProfilerTimerIfRunningAndRecordDelta(erroredWork, true);
+        // }
+
+        // throwException(
+        //   root,
+        //   erroredWork.return,
+        //   erroredWork,
+        //   thrownValue,
+        //   workInProgressRootRenderLanes
+        // );
+        console.log("handleError, completeUnitOfWork");
+        completeUnitOfWork(erroredWork);
+      } catch (yetAnotherThrownValue) {
+        // Something in the return path also threw.
+        thrownValue = yetAnotherThrownValue;
+        if (workInProgress === erroredWork && erroredWork !== null) {
+          // If this boundary has already errored, then we had trouble processing
+          // the error. Bubble it to the next boundary.
+          erroredWork = erroredWork.return;
+          workInProgress = erroredWork;
+        } else {
+          erroredWork = workInProgress;
+        }
+        continue;
+      }
+      // Return to the normal work loop;
+      return;
+    } while (true);
   }
 
   function createUpdate(eventTime, lane) {

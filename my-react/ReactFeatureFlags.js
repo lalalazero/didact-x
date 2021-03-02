@@ -14,3 +14,6 @@ export const enableCache = false;
 
 // Gather advanced timing metrics for Profiler subtrees.
 export const enableProfilerTimer = false;
+
+// Trace which interactions trigger each commit.
+export const enableSchedulerTracing = false;
