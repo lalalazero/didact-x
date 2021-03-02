@@ -4,3 +4,6 @@
 // interleaved event. Remove this flag once we have migrated to the
 // new behavior.
 export const deferRenderPhaseUpdateToNextBatch = true;
+
+// Replacement for runWithPriority in React internals.
+export const decoupleUpdatePriorityFromScheduler = false;

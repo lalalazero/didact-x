@@ -1,11 +1,24 @@
-import { now, flushSyncCallbackQueue, NoPriority as NoSchedulerPriority } from "./SchedulerWithReactIntegration";
+import {
+  now,
+  flushSyncCallbackQueue,
+  NoPriority as NoSchedulerPriority,
+  runWithPriority,
+  getCurrentPriorityLevel,
+  UserBlockingPriority as UserBlockingSchedulerPriority,
+} from "./SchedulerWithReactIntegration";
 import {
   NoTimestamp,
   SyncLane,
   SyncBatchedLane,
+  markRootUpdated,
   NoLanes,
+  mergeLanes,
+  InputDiscreteLanePriority,
+  NoLanePriority,
 } from "./ReactFiberLane";
 import { BlockingMode, NoMode, ConcurrentMode } from "./ReactFiberRoot";
+import { decoupleUpdatePriorityFromScheduler, deferRenderPhaseUpdateToNextBatch } from "./ReactFeatureFlags";
+import { HostRoot } from './ReactWorkTags'
 
 export const NoContext = /*             */ 0b0000000;
 const BatchedContext = /*               */ 0b0000001;
@@ -50,8 +63,20 @@ let workInProgressRootIncludedLanes = NoLanes;
 // Lanes that were updated (in an interleaved event) during this render.
 let workInProgressRootUpdatedLanes = NoLanes;
 
-
 let pendingPassiveEffectsRenderPriority = NoSchedulerPriority;
+
+let rootWithPendingPassiveEffects = null;
+let pendingPassiveEffectsLanes = NoLanes;
+
+// Use these to prevent an infinite loop of nested updates
+const NESTED_UPDATE_LIMIT = 50;
+let nestedUpdateCount = 0;
+let rootWithNestedUpdates = null;
+
+const NESTED_PASSIVE_UPDATE_LIMIT = 50;
+let nestedPassiveUpdateCount = 0;
+
+let mostRecentlyUpdatedRoot = null;
 
 export function unbatchedUpdates(fn, a) {
   const prevExecutionContext = executionContext;
@@ -102,7 +127,7 @@ export function requestUpdateLane(fiber) {
   if ((mode & BlockingMode) === NoMode) {
     return SyncLane;
   } else if ((mode & ConcurrentMode) === NoMode) {
-    // return getCurrentPriorityLevel() === ImmediateSchedulerPriority ? SyncLane : SyncBatchedLane;
+    return getCurrentPriorityLevel() === ImmediateSchedulerPriority ? SyncLane : SyncBatchedLane;
   } else if (
     !deferRenderPhaseUpdateToNextBatch &&
     (executionContext & RenderContext) !== NoContext &&
@@ -117,7 +142,8 @@ export function requestUpdateLane(fiber) {
     // This behavior is only a fallback. The flag only exists until we can roll
     // out the setState warning, since existing code might accidentally rely on
     // the current behavior.
-    // return pickArbitraryLane(workInProgressRootRenderLanes);
+    console.log('return requestUpdateLane')
+    // return requestUpdateLane(workInProgressRootRenderLanes);
   }
 
   // The algorithm for assigning an update to a lane should be stable for all
@@ -166,8 +192,8 @@ export function requestUpdateLane(fiber) {
     decoupleUpdatePriorityFromScheduler &&
     getCurrentUpdateLanePriority() !== NoLanePriority
   ) {
-    const currentLanePriority = getCurrentUpdateLanePriority();
-    lane = findUpdateLane(currentLanePriority, currentEventWipLanes);
+    // const currentLanePriority = getCurrentUpdateLanePriority();
+    // lane = findUpdateLane(currentLanePriority, currentEventWipLanes);
   } else {
     const schedulerLanePriority = schedulerPriorityToLanePriority(
       schedulerPriority
@@ -183,11 +209,11 @@ export function scheduleUpdateOnFiber(fiber, lane, eventTime) {
   // checkForNestedUpdates()
   // warnAboutRenderPhaseUpdatesInDEV(fiber);
 
-  // const root = markUpdateLaneFromFiberToRoot(fiber, lane);
-  // if (root === null) {
-  //     warnAboutUpdateOnUnmountedFiberInDEV(fiber);
-  //     return null;
-  // }
+  const root = markUpdateLaneFromFiberToRoot(fiber, lane);
+  if (root === null) {
+    //   warnAboutUpdateOnUnmountedFiberInDEV(fiber);
+      return null;
+  }
 
   // Mark that the root has a pending update.
   markRootUpdated(root, lane, eventTime);
@@ -290,28 +316,115 @@ function schedulePendingInteractions(root, lane) {
   // This is called when work is scheduled on a root.
   // It associates the current interactions with the newly-scheduled expiration.
   // They will be restored when that expiration is later committed.
-//   if (!enableSchedulerTracing) {
-//     return;
-//   }
-
-//   scheduleInteractions(root, lane, __interactionsRef.current);
+  //   if (!enableSchedulerTracing) {
+  //     return;
+  //   }
+  //   scheduleInteractions(root, lane, __interactionsRef.current);
 }
 
 // This is the entry point for synchronous tasks that don't go
 // through Scheduler
 function performSyncWorkOnRoot(root) {
-    // if (enableProfilerTimer && enableProfilerNestedUpdatePhase) {
-    //     syncNestedUpdateFlag();
-    //   }
+  // if (enableProfilerTimer && enableProfilerNestedUpdatePhase) {
+  //     syncNestedUpdateFlag();
+  //   }
 
-    flushPassiveEffects();
+  flushPassiveEffects();
 }
 
 export function flushPassiveEffects() {
-    // Returns whether passive effects were flushed.
-    if(pendingPassiveEffectsRenderPriority !== NoSchedulerPriority) {
-        const priorityLevel = pendingPassiveEffectsRenderPriority > NormalSchedulerPriority ? NormalSchedulerPriority : pendingPassiveEffectsRenderPriority
-        pendingPassiveEffectsRenderPriority = NoSchedulerPriority;
-        // if ()
+  // Returns whether passive effects were flushed.
+  if (pendingPassiveEffectsRenderPriority !== NoSchedulerPriority) {
+    const priorityLevel =
+      pendingPassiveEffectsRenderPriority > NormalSchedulerPriority
+        ? NormalSchedulerPriority
+        : pendingPassiveEffectsRenderPriority;
+    pendingPassiveEffectsRenderPriority = NoSchedulerPriority;
+    if (decoupleUpdatePriorityFromScheduler) {
+    //   const previousLanePriority = getCurrentUpdateLanePriority();
+    //   try {
+    //     setCurrentUpdateLanePriority(
+    //       schedulerPriorityToLanePriority(priorityLevel)
+    //     );
+    //     return runWithPriority(priorityLevel, flushPassiveEffectsImpl);
+    //   } finally {
+    //     setCurrentUpdateLanePriority(previousLanePriority);
+    //   }
+    } else {
+        return runWithPriority(priorityLevel, flushPassiveEffectsImpl)
+    }
+  }
+
+  return false;
+}
+
+function flushPassiveEffectsImpl() {
+    if (rootWithPendingPassiveEffects === null) {
+        return false;
+    }
+
+    const root = rootWithPendingPassiveEffects;
+    const lanes = pendingPassiveEffectsLanes;
+    rootWithPendingPassiveEffects = null;
+    pendingPassiveEffectsLanes = NoLanes;
+
+    const prevExecutionContext = executionContext;
+    executionContext |= CommitContext;
+    const prevInteractions = pushInteractions(root);
+
+    commitPassiveUnmountEffects(root.current);
+    commitPassiveMountEffects(root, root.current);
+
+    executionContext = prevExecutionContext;
+    flushSyncCallbackQueue();
+
+    // If additional passive effects were scheduled, increment a counter. If this
+    // exceeds the limit, we'll fire a warning.
+    nestedPassiveUpdateCount =
+    rootWithPendingPassiveEffects === null ? 0 : nestedPassiveUpdateCount + 1;
+
+    return true;
+}
+
+function pushInteractions(root) {
+    // if (enableSchedulerTracing) {
+    //     const prevInteractions = __interactionsRef.current;
+    //     __interactionsRef.current = root.memoizedInteractions;
+    //     return prevInteractions;
+    // }
+    return null;
+}
+
+// This is split into a separate function so we can mark a fiber with pending
+// work without treating it as a typical update that originates from an event;
+// e.g. retrying a Suspense boundary isn't an update, but it does schedule work
+// on a fiber.
+function markUpdateLaneFromFiberToRoot(sourceFiber, lane) {
+    // Update the source fiber's lanes
+    sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
+    let alternate = sourceFiber.alternate;
+    if (alternate !== null) {
+        alternate.lanes = mergeLanes(alternate.lanes, lane);
+    }
+
+    // Walk the parent path to the root and update the child expiration time.
+    let node= sourceFiber;
+    let parent = sourceFiber.return;
+    while (parent !== null) {
+        parent.childLanes = mergeLanes(parent.childLanes, lane);
+        alternate = parent.alternate;
+        if (alternate !== null) {
+            alternate.childLanes = mergeLanes(alternate.childLanes, lane);
+        }
+
+        node = parent;
+        parent = parent.return;
+    }
+
+    if (node.tag === HostRoot) {
+        const root = node.stateNode;
+        return root;
+    } else {
+        return null;
     }
 }

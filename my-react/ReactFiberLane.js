@@ -4,6 +4,13 @@ export const SyncLane = /*                        */ 0b0000000000000000000000000
 export const SyncBatchedLane = /*                */ 0b0000000000000000000000000000010;
 export const NoTimestamp = -1;
 
+export const InputDiscreteLanePriority = 12;
+export const NoLanePriority = 0;
+
+export function mergeLanes(a, b) {
+  return a | b;
+}
+
 export function createLaneMap(initial) {
   const laneMap = [];
   for (let i = 0; i < TotalLanes; i++) {
@@ -53,11 +60,76 @@ function clz32Fallback(lanes) {
   return (31 - ((log(lanes) / LN2) | 0)) | 0;
 }
 
-
 function pickArbitraryLaneIndex(lanes) {
   return 31 - clz32(lanes);
 }
 
 function laneToIndex(lane) {
   return pickArbitraryLaneIndex(lane);
+}
+
+export function findUpdateLane(lanePriority, wipLanes) {
+  switch (lanePriority) {
+    case NoLanePriority:
+      break;
+    case SyncLanePriority:
+      return SyncLane;
+    case SyncBatchedLanePriority:
+      return SyncBatchedLane;
+    case InputDiscreteLanePriority: {
+      const lane = pickArbitraryLane(InputDiscreteLanes & ~wipLanes);
+      if (lane === NoLane) {
+        // Shift to the next priority level
+        return findUpdateLane(InputContinuousLanePriority, wipLanes);
+      }
+      return lane;
+    }
+    case InputContinuousLanePriority: {
+      const lane = pickArbitraryLane(InputContinuousLanes & ~wipLanes);
+      if (lane === NoLane) {
+        // Shift to the next priority level
+        return findUpdateLane(DefaultLanePriority, wipLanes);
+      }
+      return lane;
+    }
+    case DefaultLanePriority: {
+      let lane = pickArbitraryLane(DefaultLanes & ~wipLanes);
+      if (lane === NoLane) {
+        // If all the default lanes are already being worked on, look for a
+        // lane in the transition range.
+        lane = pickArbitraryLane(TransitionLanes & ~wipLanes);
+        if (lane === NoLane) {
+          // All the transition lanes are taken, too. This should be very
+          // rare, but as a last resort, pick a default lane. This will have
+          // the effect of interrupting the current work-in-progress render.
+          lane = pickArbitraryLane(DefaultLanes);
+        }
+      }
+      return lane;
+    }
+    case TransitionPriority: // Should be handled by findTransitionLane instead
+    case RetryLanePriority: // Should be handled by findRetryLane instead
+      break;
+    case IdleLanePriority:
+      let lane = pickArbitraryLane(IdleLanes & ~wipLanes);
+      if (lane === NoLane) {
+        lane = pickArbitraryLane(IdleLanes);
+      }
+      return lane;
+    default:
+      // The remaining priorities are not valid for updates
+      break;
+  }
+}
+
+export function pickArbitraryLane(lanes) {
+  // This wrapper function gets inlined. Only exists so to communicate that it
+  // doesn't matter which bit is selected; you can pick any bit without
+  // affecting the algorithms where its used. Here I'm using
+  // getHighestPriorityLane because it requires the fewest operations.
+  return getHighestPriorityLane(lanes);
+}
+
+function getHighestPriorityLane(lanes) {
+  return lanes & -lanes;
 }
