@@ -1,5 +1,6 @@
 import { SyncLane } from "./ReactFiberLane";
-import { createWorkInProgress } from './ReactFiber'
+import { createWorkInProgress } from "./ReactFiber";
+import { beginWork } from "./ReactFiberBeginWork";
 
 export const NoContext = /*             */ 0b000000;
 const BatchedContext = /*               */ 0b000001;
@@ -12,10 +13,20 @@ let executionContext = NoContext;
 
 // 工作的根节点
 // The root we're working on
-let workInProgressRoot = null
+let workInProgressRoot = null;
 // 工作的 fiber 节点
 // The fiber we're working on
-let workInProgress = null
+let workInProgress = null;
+
+// Stack that allows components to change the render lanes for its subtree
+// This is a superset of the lanes we started working on at the root. The only
+// case where it's different from `workInProgressRootRenderLanes` is when we
+// enter a subtree that is hidden and needs to be unhidden: Suspense and
+// Offscreen component.
+//
+// Most things in the work loop should deal with workInProgressRootRenderLanes.
+// Most things in begin/complete phases should deal with subtreeRenderLanes.
+export let subtreeRenderLanes = NoLanes;
 
 export function unbatchedUpdates(fn, a) {
   const prevExecutionContext = executionContext;
@@ -57,63 +68,70 @@ function performSyncWorkOnRoot(root) {
 
   let lanes;
   let exitStatus;
-//   if (
-//     root === workInProgressRoot &&
-//     includesSomeLane(root.expiredLanes, workInProgressRootRenderLanes)
-//   ) {
-//     // There's a partial tree, and at least one of its lanes has expired. Finish
-//     // rendering it before rendering the rest of the expired work.
-    // lanes = workInProgressRootRenderLanes;
-    exitStatus = renderRootSync(root, lanes);
-//   }
+  //   if (
+  //     root === workInProgressRoot &&
+  //     includesSomeLane(root.expiredLanes, workInProgressRootRenderLanes)
+  //   ) {
+  //     // There's a partial tree, and at least one of its lanes has expired. Finish
+  //     // rendering it before rendering the rest of the expired work.
+  // lanes = workInProgressRootRenderLanes;
+  exitStatus = renderRootSync(root, lanes);
+  //   }
 
-    const finishedWork = root.current.alternate
-    root.finishedWork = finishedWork
-    // root.finishedLanes = lanes;
-    commitRoot(root)
+  const finishedWork = root.current.alternate;
+  root.finishedWork = finishedWork;
+  // root.finishedLanes = lanes;
+  commitRoot(root);
 
-    // ensureRootIsScheduled(root, now());
-    return null
+  // ensureRootIsScheduled(root, now());
+  return null;
 }
 
 function renderRootSync(root, lanes) {
-    prepareFreshStack(root, lanes)
+  prepareFreshStack(root, lanes);
 
-    do {
-        try {
-            workLoopSync()
-            break
-        } catch(thrownValue) {
-            console.error('thrownValue', thrownValue)
-            // handleError(root, thrownValue)
-        }
-
-    }while(true)
-
-    if(workInProgress !== null) {
-        console.error('error, This is a sync render, so we should have finished the whole tree.')
+  do {
+    try {
+      workLoopSync();
+      break;
+    } catch (thrownValue) {
+      console.error("thrownValue", thrownValue);
+      // handleError(root, thrownValue)
     }
+  } while (true);
 
-    workInProgressRoot = null
-    // workInProgressRenderLanes = NoLanes
+  if (workInProgress !== null) {
+    console.error(
+      "error, This is a sync render, so we should have finished the whole tree."
+    );
+  }
+
+  workInProgressRoot = null;
+  // workInProgressRenderLanes = NoLanes
 }
 
 function prepareFreshStack(root, lanes) {
-    root.finishedWork = null 
-    root.finishedLanes = NoLanes
+  root.finishedWork = null;
+  root.finishedLanes = NoLanes;
 
-    workInProgressRoot = root
-    workInProgress = createWorkInProgress(root.current, null)
-
+  workInProgressRoot = root;
+  workInProgress = createWorkInProgress(root.current, null);
 }
 
-
-function workLoopSync(){
-    while(workInProgress !== null) {
-        performUnitOfWork(workInProgress)
-    }
+function workLoopSync() {
+  while (workInProgress !== null) {
+    performUnitOfWork(workInProgress);
+  }
 }
 
 function performUnitOfWork(unitOfWork) {
+  const current = unitOfWork.alternate;
 
+  let next = beginWork(current, unitOfWork, subtreeRenderLanes);
+  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+  if (next === null) {
+    completeUnitOfWork(unitOfWork);
+  } else {
+    workInProgress = next;
+  }
 }
