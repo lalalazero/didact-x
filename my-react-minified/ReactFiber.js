@@ -1,8 +1,44 @@
 import { ConcurrentRoot } from "./ReactDOMRoot";
-import { HostRoot } from "./ReactWorkTags";
+import { HostRoot, IndeterminateComponent, HostComponent } from "./ReactWorkTags";
 
 const NoMode = 0;
 const ConcurrentMode = 1;
+
+function FiberNode(tag, pendingProps, key, mode) {
+    // Instance
+    this.tag = tag;
+    this.key = key;
+    this.elementType = null;
+    this.type = null;
+    this.stateNode = null;
+  
+    // Fiber
+    this.return = null;
+    this.child = null;
+    this.sibling = null;
+    this.index = 0;
+  
+    this.ref = null;
+  
+    this.pendingProps = pendingProps;
+    this.memoizedProps = null;
+    this.updateQueue = null;
+    this.memoizedState = null;
+    this.dependencies = null;
+  
+    this.mode = mode;
+  
+    // Effects
+    this.flags = NoFlags;
+    this.subtreeFlags = NoFlags;
+    this.deletions = null;
+  
+    this.lanes = NoLanes;
+    this.childLanes = NoLanes;
+  
+    this.alternate = null;
+  }
+
 
 export function createHostRootFiber(tag) {
   let mode;
@@ -19,40 +55,6 @@ const createFiber = function (tag, pendingProps, key, mode) {
   return new FiberNode(tag, pendingProps, key, mode);
 };
 
-function FiberNode(tag, pendingProps, key, mode) {
-  // Instance
-  this.tag = tag;
-  this.key = key;
-  this.elementType = null;
-  this.type = null;
-  this.stateNode = null;
-
-  // Fiber
-  this.return = null;
-  this.child = null;
-  this.sibling = null;
-  this.index = 0;
-
-  this.ref = null;
-
-  this.pendingProps = pendingProps;
-  this.memoizedProps = null;
-  this.updateQueue = null;
-  this.memoizedState = null;
-  this.dependencies = null;
-
-  this.mode = mode;
-
-  // Effects
-  this.flags = NoFlags;
-  this.subtreeFlags = NoFlags;
-  this.deletions = null;
-
-  this.lanes = NoLanes;
-  this.childLanes = NoLanes;
-
-  this.alternate = null;
-}
 
 // This is used to create an alternate fiber to do work on.
 export function createWorkInProgress(current, pendingProps) {

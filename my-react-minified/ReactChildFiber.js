@@ -1,10 +1,43 @@
 import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from "./ReactSymbols";
-import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
 
 export const reconcileChildFibers = ChildReconciler(true);
 export const mountChildFibers = ChildReconciler(false);
 
 function ChildReconciler(shouldTrackSideEffects) {
+  function reconcileChildrenArray(returnFiber, currentFirstChild, newChildren, lanes) {
+    
+  }
+  function placeSingleChild(newFiber) {
+    // This is simpler for the single child case. We only need to do a
+    // placement for inserting new children.
+    if (shouldTrackSideEffects && newFiber.alternate === null) {
+      newFiber.flags |= Placement;
+    }
+    return newFiber;
+  }
+  function useFiber(fiber, pendingProps) {
+    // We currently set sibling to null and index to 0 here because it is easy
+    // to forget to do before returning it. E.g. for the single child case.
+    const clone = createWorkInProgress(fiber, pendingProps);
+    clone.index = 0;
+    clone.sibling = null;
+    return clone;
+  }
+  function deleteRemainingChildren(returnFiber, currentFirstChild) {
+    if(!shouldTrackSideEffects) {
+      return null
+    }
+
+    // TODO: For the shouldClone case, this could be micro-optimized a bit by
+    // assuming that after the first child we've already added everything.
+    // let childToDelete = currentFirstChild;
+    // while (childToDelete !== null) {
+    //   deleteChild(returnFiber, childToDelete);
+    //   childToDelete = childToDelete.sibling;
+    // }
+    // return null;
+  }
   function reconcileSingleTextNode(
     returnFiber,
     currentFirstChild,
@@ -32,7 +65,8 @@ function ChildReconciler(shouldTrackSideEffects) {
   ) {
     const key = element.key;
     let child = currentFirstChild;
-    while (child !== null) {
+    while (child !== null) { // 暂时不会进到这里
+      console.error('不应该进到这里，需要再完善代码')
       if (child.key === key) {
         const elementType = element.type;
         if (elementType === REACT_FRAGMENT_TYPE) {
@@ -49,7 +83,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         deleteRemainingChildren(returnFiber, child);
         break;
       } else {
-        deleteChild(returnFiber, child);
+        // deleteChild(returnFiber, child);
       }
       child = child.sibling;
     }
@@ -106,7 +140,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
     }
 
-    if (typeof newChild === "string" || typeof newChild === "number") {
+    if (typeof newChild === "string" || typeof newChild === "number") { // 这里暂时也没有进
       return placeSingleChild(
         reconcileSingleTextNode(
           returnFiber,
@@ -127,6 +161,8 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
 
     // ...省略其他
+    // Remaining cases are all treated as empty.
+    return deleteRemainingChildren(returnFiber, currentFirstChild)
   }
 
   return reconcileChildFibers;
