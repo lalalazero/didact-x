@@ -40,6 +40,7 @@ export function processUpdateQueue(
   instance,
   renderLanes
 ) {
+  // This is always non-null on a ClassComponent or HostRoot
   const queue = workInProgress.updateQueue;
 
   hasForceUpdate = false;
