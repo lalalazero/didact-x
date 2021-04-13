@@ -1,6 +1,6 @@
 
 function createInternalComponent(element) {
-    return new ReactDOMComponent(element)
+    return ReactDOMComponent(element)
 }
 
 var ReactNativeComponent = {

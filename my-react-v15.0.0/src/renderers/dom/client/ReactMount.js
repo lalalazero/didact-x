@@ -1,7 +1,7 @@
-var ReactElement = require('./ReactElement')
-var ReactDOMComponentTree = require('./ReactDOMComponentTree')
-var instantiateReactComponent = require('./reconciler/instantiateReactComponent')
-var ReactUpdates = require('./reconciler/ReactUpdates')
+var ReactElement = require('ReactElement')
+var ReactDOMComponentTree = require('ReactDOMComponentTree')
+var instantiateReactComponent = require('instantiateReactComponent')
+var ReactUpdates = require('ReactUpdates')
 
 var DOC_NODE_TYPE = 9;
 
