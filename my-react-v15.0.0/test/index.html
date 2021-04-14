@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React v15</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        #root {
+            padding: 100px;
+            margin: 20px;
+            border: 1px solid;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="../build/offical/react.js"></script>
+    <script src="../build/offical/react-dom.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script> -->
+    <script src="../build/offical/babel.js"></script>
+    <script type="text/babel">
+      var HelloMessage = React.createClass({
+        render: function () {
+          return <div>Hello {this.props.name}</div>;
+        },
+      });
+
+      ReactDOM.render(
+        <HelloMessage name="John" />,
+        document.getElementById("root")
+      );
+    </script>
+
+    <a href="https://gist.github.com/maechabin/fbc528b248bbec2c72b14357e7c99310">React v15 toturial</a>
+  </body>
+</html>
