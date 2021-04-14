@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>React v15</title>
     <style>
-        body {
-            text-align: center;
-        }
-        #root {
-            padding: 100px;
-            margin: 20px;
-            border: 1px solid;
-        }
+      body {
+        text-align: center;
+      }
+      #root {
+        padding: 100px;
+        margin: 20px;
+        border: 1px solid;
+      }
     </style>
   </head>
   <body>
@@ -24,8 +24,46 @@
     <script src="../build/offical/babel.js"></script>
     <script type="text/babel">
       var HelloMessage = React.createClass({
+        getInitialState: function () {
+          return { count: 0 };
+        },
+        componentDidMount: function () {
+          console.error("componentDidMount..");
+        },
+        handleClick: function () {
+          this.setState({
+            count: this.state.count + 1,
+          });
+
+          this.setState({
+            count: this.state.count + 1,
+          });
+
+          this.setState({
+            count: this.state.count + 1,
+          });
+
+        //   setTimeout(() => {
+        //     this.setState({
+        //       count: this.state.count + 1,
+        //     });
+
+        //     this.setState({
+        //       count: this.state.count + 1,
+        //     });
+
+        //     this.setState({
+        //       count: this.state.count + 1,
+        //     });
+        //   }, 1000);
+        },
         render: function () {
-          return <div>Hello {this.props.name}</div>;
+          return (
+            <div>
+              Hello {this.props.name}, count={this.state.count}
+              <button onClick={this.handleClick}>+3</button>
+            </div>
+          );
         },
       });
 
@@ -35,6 +73,8 @@
       );
     </script>
 
-    <a href="https://gist.github.com/maechabin/fbc528b248bbec2c72b14357e7c99310">React v15 toturial</a>
+    <a href="https://gist.github.com/maechabin/fbc528b248bbec2c72b14357e7c99310"
+      >React v15 toturial</a
+    >
   </body>
 </html>

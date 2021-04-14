@@ -5183,6 +5183,7 @@ ReactComponent.prototype.isReactComponent = {};
  * @protected
  */
 ReactComponent.prototype.setState = function (partialState, callback) {
+  console.warn('---> setState called..')
   !(typeof partialState === 'object' || typeof partialState === 'function' || partialState == null) ? "development" !== 'production' ? invariant(false, 'setState(...): takes an object of state variables to update or a ' + 'function which returns an object of state variables.') : invariant(false) : void 0;
   if ("development" !== 'production') {
     ReactInstrumentation.debugTool.onSetState();
@@ -5481,6 +5482,7 @@ var ReactCompositeComponentMixin = {
    * @internal
    */
   mountComponent: function (transaction, nativeParent, nativeContainerInfo, context) {
+    console.log('mountComponent')
     this._context = context;
     this._mountOrder = nextMountID++;
     this._nativeParent = nativeParent;
@@ -5581,6 +5583,7 @@ var ReactCompositeComponentMixin = {
     }
 
     if (inst.componentDidMount) {
+      console.log('enqueue inst.componentDidMount..', inst)
       transaction.getReactMountReady().enqueue(inst.componentDidMount, inst);
     }
 
@@ -5612,6 +5615,7 @@ var ReactCompositeComponentMixin = {
   },
 
   performInitialMount: function (renderedElement, nativeParent, nativeContainerInfo, transaction, context) {
+    console.warn('---> performInitialMount...arguments', arguments)
     var inst = this._instance;
     if (inst.componentWillMount) {
       inst.componentWillMount();
@@ -6469,6 +6473,7 @@ function assertValidProps(component, props) {
 }
 
 function enqueuePutListener(inst, registrationName, listener, transaction) {
+  console.log('enqueuPutListener..', inst._tag, registrationName)
   if ("development" !== 'production') {
     // IE8 has no API for event capturing and the `onScroll` event doesn't
     // bubble.
@@ -6672,6 +6677,7 @@ ReactDOMComponent.Mixin = {
    * @return {string} The computed markup.
    */
   mountComponent: function (transaction, nativeParent, nativeContainerInfo, context) {
+    console.log('---> ReactDOMComponent.Mixin.mountComponent..')
     this._rootNodeID = globalIdCounter++;
     this._domID = nativeContainerInfo._idCounter++;
     this._nativeParent = nativeParent;
@@ -9218,6 +9224,7 @@ var ReactDefaultBatchingStrategy = {
    * and friends are batched such that components aren't updated unnecessarily.
    */
   batchedUpdates: function (callback, a, b, c, d, e) {
+    console.warn('---> defaultBatchingStrategy.batchedUpdates..')
     var alreadyBatchingUpdates = ReactDefaultBatchingStrategy.isBatchingUpdates;
 
     ReactDefaultBatchingStrategy.isBatchingUpdates = true;
@@ -9226,6 +9233,7 @@ var ReactDefaultBatchingStrategy = {
     if (alreadyBatchingUpdates) {
       callback(a, b, c, d, e);
     } else {
+      
       transaction.perform(callback, null, a, b, c, d, e);
     }
   }
@@ -9966,10 +9974,18 @@ var ReactElement = function (type, key, ref, self, source, owner, props) {
     }
   }
 
+  console.log('创建 ReactElement...props.children..', props.children)
   return element;
 };
 
 ReactElement.createElement = function (type, config, children) {
+  console.warn('---> 进入 createElement..')
+  if(typeof type === 'function') {
+    console.log('type', type.displayName)
+  }else if(typeof type === 'string') {
+    console.log('type', type)
+  }
+  // console.log('config..', config, 'children..', children)
   var propName;
 
   // Reserved names are extracted
@@ -10707,6 +10723,7 @@ var ReactEventListener = {
   },
 
   dispatchEvent: function (topLevelType, nativeEvent) {
+    console.log('dispatchEvent...')
     if (!ReactEventListener._enabled) {
       return;
     }
@@ -11158,6 +11175,7 @@ function internalGetID(node) {
  * @param {boolean} shouldReuseMarkup If true, do not insert markup
  */
 function mountComponentIntoNode(wrapperInstance, container, transaction, shouldReuseMarkup, context) {
+  console.warn('---> mountComponentIntoNode')
   var markerName;
   if (ReactFeatureFlags.logTopLevelRenders) {
     var wrappedElement = wrapperInstance._currentElement.props;
@@ -11184,6 +11202,7 @@ function mountComponentIntoNode(wrapperInstance, container, transaction, shouldR
  * @param {boolean} shouldReuseMarkup If true, do not insert markup
  */
 function batchedMountComponentIntoNode(componentInstance, container, shouldReuseMarkup, context) {
+  console.warn('---> batchedMountComponentIntoNode')
   var transaction = ReactUpdates.ReactReconcileTransaction.getPooled(
   /* useCreateElement */
   !shouldReuseMarkup && ReactDOMFeatureFlags.useCreateElement);
@@ -11326,6 +11345,7 @@ var ReactMount = {
    * @return {ReactComponent} nextComponent
    */
   _renderNewRootComponent: function (nextElement, container, shouldReuseMarkup, context) {
+    console.warn('---> 进入 _renderNewRootComponent')
     // Various parts of our code (such as ReactCompositeComponent's
     // _renderValidatedComponent) assume that calls to render aren't nested;
     // verify that that's the case.
@@ -11334,6 +11354,7 @@ var ReactMount = {
     !(container && (container.nodeType === ELEMENT_NODE_TYPE || container.nodeType === DOC_NODE_TYPE || container.nodeType === DOCUMENT_FRAGMENT_NODE_TYPE)) ? "development" !== 'production' ? invariant(false, '_registerComponent(...): Target container is not a DOM element.') : invariant(false) : void 0;
 
     ReactBrowserEventEmitter.ensureScrollValueMonitoring();
+    console.log('nextElement', nextElement)
     var componentInstance = instantiateReactComponent(nextElement);
 
     console.log('componentInstance', componentInstance)
@@ -11373,6 +11394,10 @@ var ReactMount = {
   },
 
   _renderSubtreeIntoContainer: function (parentComponent, nextElement, container, callback) {
+    console.warn('render 的起点---> 进入 _renderSubtreeIntoContainer..')
+    console.log('parentComponent', parentComponent)
+    console.log('nextElement ', nextElement)
+    console.log('container ', container)
     ReactUpdateQueue.validateCallback(callback, 'ReactDOM.render');
     !ReactElement.isValidElement(nextElement) ? "development" !== 'production' ? invariant(false, 'ReactDOM.render(): Invalid component element.%s', typeof nextElement === 'string' ? ' Instead of passing a string like \'div\', pass ' + 'React.createElement(\'div\') or <div />.' : typeof nextElement === 'function' ? ' Instead of passing a class like Foo, pass ' + 'React.createElement(Foo) or <Foo />.' :
     // Check if it quacks like an element
@@ -11380,6 +11405,7 @@ var ReactMount = {
 
     "development" !== 'production' ? warning(!container || !container.tagName || container.tagName.toUpperCase() !== 'BODY', 'render(): Rendering components directly into document.body is ' + 'discouraged, since its children are often manipulated by third-party ' + 'scripts and browser extensions. This may lead to subtle ' + 'reconciliation issues. Try rendering into a container element created ' + 'for your app.') : void 0;
 
+    
     var nextWrappedElement = ReactElement(TopLevelWrapper, null, null, null, null, null, nextElement);
 
     var prevComponent = getTopLevelWrapperInContainer(container);
@@ -13789,6 +13815,7 @@ flushBatchedUpdates = ReactPerf.measure('ReactUpdates', 'flushBatchedUpdates', f
  * list of functions which will be executed once the rerender occurs.
  */
 function enqueueUpdate(component) {
+  console.warn('---> enqueueUpdate', component)
   ensureInjected();
 
   // Various parts of our code (such as ReactCompositeComponent's
@@ -17089,6 +17116,7 @@ function isInternalComponentType(type) {
  * @protected
  */
 function instantiateReactComponent(node) {
+  console.warn('---> instantiateReactComponent ,node', node)
   var instance;
 
   if (node === null || node === false) {
