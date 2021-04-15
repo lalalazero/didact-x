@@ -18,53 +18,34 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="../build/offical/react.js"></script>
-    <script src="../build/offical/react-dom.js"></script>
+    <script>
+        var React = {
+            createElement: function() {
+
+            },
+            createClass: function() {
+
+            },
+            
+        }
+
+        var ReactDOM = {
+            render: function() {
+
+            }
+        }
+    </script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script> -->
     <script src="../build/offical/babel.js"></script>
     <script type="text/babel">
       var HelloMessage = React.createClass({
-        getInitialState: function () {
-          return { count: 0 };
-        },
         componentDidMount: function () {
           console.error("componentDidMount..");
         },
-        // handleClick: function () {
-        //   this.setState({
-        //     count: this.state.count + 1,
-        //   });
-
-        //   this.setState({
-        //     count: this.state.count + 1,
-        //   });
-
-        //   this.setState({
-        //     count: this.state.count + 1,
-        //   });
-
-        //   setTimeout(() => {
-        //     this.setState({
-        //       count: this.state.count + 1,
-        //     });
-
-        //     this.setState({
-        //       count: this.state.count + 1,
-        //     });
-
-        //     this.setState({
-        //       count: this.state.count + 1,
-        //     });
-        //   }, 1000);
-        // },
         render: function () {
           return (
             <div>
               Hello {this.props.name}
-              {/*
-                count={this.state.count}
-                <button onClick={this.handleClick}>+1</button>
-                */}
             </div>
           );
         },
