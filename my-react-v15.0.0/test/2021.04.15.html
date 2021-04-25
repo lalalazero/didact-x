@@ -19,21 +19,365 @@
   <body>
     <div id="root"></div>
     <script>
-        var React = {
-            createElement: function() {
+      var emptyObject = {};
+      // ReactNoopUpdateQueue.js
+      var ReactNoopUpdateQueue = {
+        // todo
+      };
+      // ReactCurrentOwner.js
+      var ReactCurrentOwner = {
+        current: null,
+      };
+      // ReactElement.js
+      var REACT_ELEMENT_TYPE =
+        (typeof Symbol === "function" &&
+          Symbol.for &&
+          Symbol.for("react.element")) ||
+        0xeac7;
+      var RESERVED_PROPS = {
+        key: true,
+        ref: true,
+        __self: true,
+        __source: true,
+      };
 
-            },
-            createClass: function() {
+      var ReactElement = function (type, key, ref, self, source, owner, props) {
+        var element = {
+          $$typeof: REACT_ELEMENT_TYPE,
 
-            },
-            
-        }
+          type,
+          key,
+          ref,
+          props,
 
-        var ReactDOM = {
-            render: function() {
+          _owner: owner,
+        };
+        return element;
+      };
 
+      ReactElement.createElement = function (type, config, children) {
+        var propName;
+
+        var props = {};
+
+        var key = null;
+        var ref = null;
+        var self = null;
+        var source = null;
+
+        if (config != null) {
+          ref = config.ref === undefined ? null : config.ref;
+          key = config.key === undefined ? null : "" + config.key;
+
+          self = config.__self === undefined ? null : config.__self;
+          source = config.__source === undefined ? null : config.__source;
+
+          for (propName in config) {
+            if (
+              config.hasOwnProperty(propName) &&
+              !RESERVED_PROPS.hasOwnProperty(propName)
+            ) {
+              props[propName] = config[propName];
             }
+          }
         }
+
+        var childrenLength = arguments.length - 2;
+        if (childrenLength === 1) {
+          props.children = children;
+        } else if (childrenLength > 1) {
+          var childArray = Array(childrenLength);
+          for (var i = 0; i < childrenLength; i++) {
+            childArray[i] = arguments[i + 2];
+          }
+
+          props.children = childArray;
+        }
+
+        // 省略 default props 逻辑
+        return ReactElement(
+          type,
+          key,
+          ref,
+          self,
+          source,
+          ReactCurrentOwner.current,
+          props
+        );
+      };
+
+      // ReactComponent.js
+      function ReactComponent(props, context, updater) {
+        this.props = props;
+        // this.context = context;
+        // this.refs = emptyObject;
+        this.updater = updater || ReactNoopUpdateQueue;
+      }
+
+      ReactComponent.prototype.isReactComponent = {};
+
+      var ReactClassComponent = function () {};
+      Object.assign(ReactClassComponent.prototype, ReactComponent.prototype);
+
+      // ReactClass.js
+      var ReactClass = {
+        createClass: function (spec) {
+          var Constructor = function (props, context, updater) {
+            this.props = props;
+            this.context = context;
+            // this.refs = emptyObject;
+            // this.updater = updater || ReactNoopUpdateQueue;
+
+            this.state = null;
+
+            // ReactClasses doesn't have constructors. Instead, they use the
+            // getInitialState and componentWillMount methods for initialization.
+
+            var initialState = this.getInitialState
+              ? this.getInitialState()
+              : null;
+
+            this.state = initialState;
+          };
+
+          Constructor.prototype = new ReactClassComponent();
+          Constructor.prototype.constructor = Constructor;
+          Constructor.prototype.__reactAutoBindPairs = [];
+
+          return Constructor;
+        },
+      };
+
+      // React.js
+      var React = {
+        createElement: ReactElement.createElement,
+        createClass: ReactClass.createClass,
+      };
+
+      // ReactDOMTextComponent.js
+      var ReactDOMTextComponent = function (text) {
+        // TODO: This is really a ReactText (ReactNode), not a ReactElement
+        this._currentElement = text;
+        this._stringText = "" + text;
+
+        // ReactDOMComponentTree uses these:
+        this._nativeNode = null;
+        this._nativeParent = null;
+
+        // Properties
+        this._domID = null;
+        this._mountIndex = 0;
+        this._closingComment = null;
+        this._commentNodes = null;
+      };
+
+      Object.assign(ReactDOMTextComponent.prototype, {
+        mountComponent: function () {
+          console.log("todo mountComponent..");
+        },
+        receiveComponent: function () {
+          console.log("todo mountComponent..");
+        },
+      });
+
+      // ReactDOMComponent.js
+      function ReactDOMComponent(element) {
+        var tag = element.type;
+        // validateDangerousTag(tag);
+        this._currentElement = element;
+        this._tag = tag.toLowerCase();
+        this._namespaceURI = null;
+        this._renderedChildren = null;
+        this._previousStyle = null;
+        this._previousStyleCopy = null;
+        this._nativeNode = null;
+        this._nativeParent = null;
+        this._rootNodeID = null;
+        this._domID = null;
+        this._nativeContainerInfo = null;
+        this._wrapperState = null;
+        this._topLevelWrapper = null;
+        this._flags = 0;
+      }
+
+      ReactDOMComponent.displayName = "ReactDOMComponent";
+      ReactDOMComponent.Mixin = {
+        mountComponent: function () {
+          console.log("mount component todo..");
+        },
+        receiveComponent: function () {
+          console.log("receiveComponent todo..");
+        },
+      };
+      Object.assign(
+        ReactDOMComponent.prototype,
+        ReactDOMComponent.Mixin
+        //  ReactMultiChild.Mixin
+      );
+
+      // ================ Reconciler        =================
+      // ReactCompositeComponent.js
+      var ReactCompositeComponentMixin = {
+        construct: function (element) {
+          this._currentElement = element;
+          this._rootNodeID = null;
+          this._instance = null;
+          this._nativeParent = null;
+          this._nativeContainerInfo = null;
+
+          // See ReactUpdateQueue
+          this._pendingElement = null;
+          this._pendingStateQueue = null;
+          this._pendingReplaceState = false;
+          this._pendingForceUpdate = false;
+
+          this._renderedNodeType = null;
+          this._renderedComponent = null;
+          this._context = null;
+          this._mountOrder = 0;
+          this._topLevelWrapper = null;
+
+          // See ReactUpdates and ReactUpdateQueue.
+          this._pendingCallbacks = null;
+        },
+        mountComponent: function () {
+          console.log("mount component todo...3");
+        },
+        receiveComponent: function () {
+          console.log("mount component todo...3");
+        },
+      };
+      var ReactCompositeComponent = {
+        Mixin: ReactCompositeComponentMixin,
+      };
+      // ReactNativeComponent.js
+      var genericComponentClass = ReactDOMComponent;
+      var textComponentClass = ReactDOMTextComponent;
+      var ReactNativeComponent = {
+        createInternalComponent: function (element) {
+          return new genericComponentClass(element);
+        },
+        createInstanceForText: function (text) {
+          return new textComponentClass(text);
+        },
+      };
+      // instantiateReactComponent.js
+      // To avoid a cyclic dependency, we create the final class in this module
+      var ReactCompositeComponentWrapper = function (element) {
+        this.construct(element);
+      };
+      Object.assign(
+        ReactCompositeComponentWrapper.prototype,
+        ReactCompositeComponent.Mixin
+      );
+      function isInternalComponentType(type) {
+        return (
+          typeof type === "function" &&
+          typeof type.prototype !== "undefined" &&
+          typeof type.prototype.mountComponent === "function" &&
+          typeof type.prototype.receiveComponent === "function"
+        );
+      }
+      function instantiateReactComponent(node) {
+        var instance;
+        if (node === null || node === false) {
+          console.warn("省略 null / false 的逻辑");
+          // instance = ReactEmptyComponent.create(instantiateReactComponent)
+        } else if (typeof node === "object") {
+          var element = node;
+          if (typeof element.type === "string") {
+            instance = ReactNativeComponent.createInternalComponent(element);
+          } else if (isInternalComponentType(element.type)) {
+            instance = new element.type(element);
+          } else {
+            instance = new ReactCompositeComponentWrapper(element);
+          }
+        } else if (typeof node === "string" || typeof node === "number") {
+          instance = ReactNativeComponent.createInstanceForText(node);
+        } else {
+          console.error("invalid React node of type", typeof node);
+        }
+
+        instance._mountIndex = 0;
+        instance._mountImage = null;
+        return instance;
+      }
+
+      // ================ ReactDOM renderer =================
+      // ReactMount.js
+      var topLevelRootCounter = 1;
+      var TopLevelWrapper = function () {
+        this.rootID = topLevelRootCounter++;
+      };
+      TopLevelWrapper.prototype.isReactComponent = {};
+      TopLevelWrapper.prototype.render = function () {
+        return this.props;
+      };
+      var ReactMount = {
+        _renderNewRootComponent: function (
+          nextElement,
+          container,
+          shouldReuseMarkup,
+          context
+        ) {
+          var componentInstance = instantiateReactComponent(nextElement);
+
+          ReactUpdates.batchedUpdates(
+            batchedMountComponentIntoNode,
+            componentInstance,
+            container,
+            shouldReuseMarkup,
+            context
+          );
+
+          return componentInstance;
+        },
+        _renderSubtreeIntoContainer: function (
+          parentComponent,
+          nextElement,
+          container,
+          callback
+        ) {
+          var nextWrapperElement = ReactElement(
+            TopLevelWrapper,
+            null,
+            null,
+            null,
+            null,
+            null,
+            nextElement
+          );
+          // 省略更新或者卸载的逻辑
+          // var prevComponent = getTopLevelWrapperInContainer(container)
+
+          // 只考虑第一次渲染
+          // var shouldReuseMarkup = false
+          // var reactRootElement = getReactRootElementInContainer(container);
+          var component = ReactMount._renderNewRootComponent(
+            nextWrapperElement,
+            container,
+            false, // shouldReuseMarkup,
+            emptyObject
+          )._renderedComponent.getPublicInstance();
+
+          if (callback) {
+            callback.call(component);
+          }
+        },
+        render: function (nextElement, container, callback) {
+          return ReactMount._renderSubtreeIntoContainer(
+            null,
+            nextElement,
+            container,
+            callback
+          );
+        },
+      };
+
+      // ReactDOM.js
+      var ReactDOM = {
+        render: ReactMount.render,
+      };
     </script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script> -->
     <script src="../build/offical/babel.js"></script>
@@ -43,11 +387,7 @@
           console.error("componentDidMount..");
         },
         render: function () {
-          return (
-            <div>
-              Hello {this.props.name}
-            </div>
-          );
+          return <div>Hello {this.props.name}</div>;
         },
       });
 
