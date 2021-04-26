@@ -16,6 +16,31 @@
       }
     </style>
   </head>
+  <script type="text/javascript">
+    var invariant = function (condition, format, a, b, c, d, e, f) {
+      if (!condition) {
+        var error;
+        if (format === undefined) {
+          error = new Error(
+            "Minified exception occurred; use the non-minified dev environment " +
+              "for the full error message and additional helpful warnings."
+          );
+        } else {
+          var args = [a, b, c, d, e, f];
+          var argIndex = 0;
+          error = new Error(
+            format.replace(/%s/g, function () {
+              return args[argIndex++];
+            })
+          );
+          error.name = "Invariant Violation";
+        }
+
+        error.framesToPop = 1; // we don't care about invariant's own frame
+        throw error;
+      }
+    };
+  </script>
   <body>
     <div id="root"></div>
     <script>
@@ -214,9 +239,75 @@
         ReactDOMComponent.Mixin
         //  ReactMultiChild.Mixin
       );
+      // ReactInstanceMap.js
+      /**
+       * `ReactInstanceMap` maintains a mapping from a public facing stateful
+       * instance (key) and the internal representation (value). This allows public
+       * methods to accept the user facing instance as an argument and map them back
+       * to internal methods.
+       */
+
+      // TODO: Replace this with ES6: var ReactInstanceMap = new Map();
+      var ReactInstanceMap = {
+        /**
+         * This API should be called `delete` but we'd have to make sure to always
+         * transform these to strings for IE support. When this transform is fully
+         * supported we can rename it.
+         */
+        remove: function (key) {
+          key._reactInternalInstance = undefined;
+        },
+
+        get: function (key) {
+          return key._reactInternalInstance;
+        },
+
+        has: function (key) {
+          return key._reactInternalInstance !== undefined;
+        },
+
+        set: function (key, value) {
+          key._reactInternalInstance = value;
+        },
+      };
+
+      // ReactUpdateQueue.js
+      /**
+       * ReactUpdateQueue allows for state updates to be scheduled into a later
+       * reconciliation step.
+       */
+      var ReactUpdateQueue = {};
 
       // ================ Reconciler        =================
+      // ReactReconciler.js
+      var ReactReconciler = {
+        mountComponent: function (
+          internalInstance,
+          transaction,
+          nativeParent,
+          nativeContainerInfo,
+          context
+        ) {
+          var markup = internalInstance.mountComponent(
+            transaction,
+            nativeParent,
+            nativeContainerInfo,
+            context
+          );
+          return markup;
+        },
+      };
+      // ReactUpdates.js
+      var ReactUpdates = {
+        batchedUpdates: function (callback, a, b, c, d, e) {
+          // 省略 transaction 部分
+          // ReactDefaultBatchingStrategy.batchedUpdates(callback, a, b, c, d, e);
+          // 直接调
+          callback.call(null, a, b, c, d, e);
+        },
+      };
       // ReactCompositeComponent.js
+      var nextMountID = 1;
       var ReactCompositeComponentMixin = {
         construct: function (element) {
           this._currentElement = element;
@@ -240,11 +331,180 @@
           // See ReactUpdates and ReactUpdateQueue.
           this._pendingCallbacks = null;
         },
-        mountComponent: function () {
-          console.log("mount component todo...3");
+        /**
+         * Filters the context object to only contain keys specified in
+         * `contextTypes`
+         *
+         * @param {object} context
+         * @return {?object}
+         * @private
+         */
+        _maskContext: function (context) {
+          var Component = this._currentElement.type;
+          var contextTypes = Component.contextTypes;
+          if (!contextTypes) {
+            return emptyObject;
+          }
+          var maskedContext = {};
+          for (var contextName in contextTypes) {
+            maskedContext[contextName] = context[contextName];
+          }
+          return maskedContext;
+        },
+        _processProps: function (newProps) {
+          return newProps;
+        },
+        _processContext: function (context) {
+          var maskedContext = this._maskContext(context);
+          return maskedContext;
+        },
+        /**
+         *  Initializes the component, renders markup, and registers event listeners.
+         * */
+
+        mountComponent: function (
+          transaction,
+          nativeParent,
+          nativeContainerInfo,
+          context
+        ) {
+          this._context = context;
+          this._mountOrder = nextMountID++;
+          this._nativeParent = nativeParent;
+          this._nativeContainerInfo = nativeContainerInfo;
+
+          var publicProps = this._processProps(this._currentElement.props);
+          var publicContext = this._processContext(context);
+
+          var Component = this._currentElement.type;
+
+          // Initialize the public class
+          var inst;
+          var renderedElement;
+
+          if (Component.prototype && Component.prototype.isReactComponent) {
+            inst = new Component(publicProps, publicContext, ReactUpdateQueue);
+          } else {
+            inst = Component(publicProps, publicContext, ReactUpdateQueue);
+            if (inst == null || inst.render == null) {
+              renderedElement = inst;
+              invariant(
+                inst === null ||
+                  inst === false ||
+                  ReactElement.isValidElement(inst),
+                "%s(...): A valid React element (or null) must be returned. You may have " +
+                  "returned undefined, an array or some other invalid object.",
+                Component.displayName || Component.name || "Component"
+              );
+              inst = new StatelessComponent(Component);
+            }
+          }
+
+          // These should be set up in the constructor, but as a convenience for
+          // simpler class abstractions, we set them up after the fact.
+          inst.props = publicProps;
+          inst.context = publicContext;
+          inst.refs = emptyObject;
+          inst.updater = ReactUpdateQueue;
+
+          this._instance = inst;
+
+          // Store a reference from the instance back to the internal representation
+          ReactInstanceMap.set(inst, this);
+
+          var initialState = inst.state;
+          if (initialState === undefined) {
+            inst.state = initialState = null;
+          }
+          invariant(
+            typeof initialState === "object" && !Array.isArray(initialState),
+            "%s.state: must be set to an object or null",
+            this.getName() || "ReactCompositeComponent"
+          );
+
+          this._pendingStateQueue = null;
+          this._pendingReplaceState = false;
+          this._pendingForceUpdate = false;
+
+          var markup;
+          if (inst.unstable_handleError) {
+            markup = this.performInitialMountWithErrorHandling(
+              renderedElement,
+              nativeParent,
+              nativeContainerInfo,
+              transaction,
+              context
+            );
+          } else {
+            markup = this.performInitialMount(
+              renderedElement,
+              nativeParent,
+              nativeContainerInfo,
+              transaction,
+              context
+            );
+          }
+
+          if (inst.componentDidMount) {
+            // transaction
+            //   .getReactMountReady()
+            //   .enqueue(inst.componentDidMount, inst);
+            console.log("不考虑 transaction , 直接调用 componentDidMount..");
+            inst.componentDidMount.call(inst);
+          }
+
+          return markup;
         },
         receiveComponent: function () {
-          console.log("mount component todo...3");
+          console.log("receive component todo...3");
+        },
+        performInitialMount: function (
+          renderedElement,
+          nativeParent,
+          nativeContainerInfo,
+          transaction,
+          context
+        ) {
+          var inst = this._instance;
+          if (inst.componentWillMount) {
+            inst.componentWillMount();
+            // When mounting, calls to `setState` by `componentWillMount` will set
+            // `this._pendingStateQueue` without triggering a re-render.
+            if (this._pendingStateQueue) {
+              inst.state = this._processPendingState(inst.props, inst.context);
+            }
+          }
+
+          // If not a stateless component, we now render
+          if (renderedElement === undefined) {
+            renderedElement = this._renderValidatedComponent();
+          }
+
+          this._renderedNodeType = ReactNodeTypes.getType(renderedElement);
+          this._renderedComponent = this._instantiateReactComponent(
+            renderedElement
+          );
+
+          var markup = ReactReconciler.mountComponent(
+            this._renderedComponent,
+            transaction,
+            nativeParent,
+            nativeContainerInfo,
+            this._processChildContext(context)
+          );
+
+          return markup;
+        },
+        getName: function () {
+          var type = this._currentElement.type;
+          var constructor = this._instance && this._instance.constructor;
+          return (
+            type.displayName ||
+            (constructor && constructor.displayName) ||
+            type.name ||
+            (constructor && constructor.name) ||
+            null
+          );
         },
       };
       var ReactCompositeComponent = {
@@ -304,6 +564,23 @@
       }
 
       // ================ ReactDOM renderer =================
+      // ReactDOMContainerInfo.js
+      var DOC_NODE_TYPE = 9;
+      function ReactDOMContainerInfo(topLevelWrapper, node) {
+        var info = {
+          _topLevelWrapper: topLevelWrapper,
+          _idCounter: 1,
+          _ownerDocument: node
+            ? node.nodeType === DOC_NODE_TYPE
+              ? node
+              : node.ownerDocument
+            : null,
+          _tag: node ? node.nodeName.toLowerCase() : null,
+          _namespaceURI: node ? node.namespaceURI : null,
+        };
+
+        return info;
+      }
       // ReactMount.js
       var topLevelRootCounter = 1;
       var TopLevelWrapper = function () {
@@ -313,6 +590,63 @@
       TopLevelWrapper.prototype.render = function () {
         return this.props;
       };
+
+      function mountComponentIntoNode(
+        wrapperInstance,
+        container,
+        transaction,
+        shouldReuseMarkup,
+        context
+      ) {
+        var markup = ReactReconciler.mountComponent(
+          wrapperInstance,
+          transaction,
+          null,
+          ReactDOMContainerInfo(wrapperInstance, container),
+          context
+        );
+
+        wrapperInstance._renderedComponent._topLevelWrapper = wrapperInstance;
+        ReactMount._mountImageIntoNode(
+          markup,
+          container,
+          wrapperInstance,
+          shouldReuseMarkup,
+          transaction
+        );
+      }
+
+      function batchedMountComponentIntoNode(
+        componentInstance,
+        container,
+        shouldReuseMarkup,
+        context
+      ) {
+        var transaction = null;
+        // 暂时省略 transaction 部分
+        // var transaction = ReactUpdates.ReactReconcilerTransaction.getPooled(
+        //   true
+        // );
+        // transaction.perform(
+        //   mountComponentIntoNode,
+        //   null,
+        //   componentInstance,
+        //   container,
+        //   transaction,
+        //   shouldReuseMarkup,
+        //   context
+        // );
+        // ReactUpdates.ReactReconcilerTransaction.release(transaction);
+        // 其实就是直接调用了
+        mountComponentIntoNode.call(
+          null,
+          componentInstance,
+          container,
+          transaction,
+          shouldReuseMarkup,
+          context
+        );
+      }
       var ReactMount = {
         _renderNewRootComponent: function (
           nextElement,
