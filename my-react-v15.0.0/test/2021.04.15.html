@@ -45,6 +45,25 @@
     <div id="root"></div>
     <script>
       var emptyObject = {};
+      // ReactNodeTypes.js
+      var ReactNodeTypes = {
+        NATIVE: 0,
+        COMPOSITE: 1,
+        EMPTY: 2,
+
+        getType: function (node) {
+          if (node === null || node === false) {
+            return ReactNodeTypes.EMPTY;
+          } else if (ReactElement.isValidElement(node)) {
+            if (typeof node.type === "function") {
+              return ReactNodeTypes.COMPOSITE;
+            } else {
+              return ReactNodeTypes.NATIVE;
+            }
+          }
+          invariant(false, "Unexpected node: %s", node);
+        },
+      };
       // ReactNoopUpdateQueue.js
       var ReactNoopUpdateQueue = {
         // todo
@@ -131,6 +150,13 @@
         );
       };
 
+      ReactElement.isValidElement = function (object) {
+        return (
+          typeof object === "object" &&
+          object !== null &&
+          object.$$typeof === REACT_ELEMENT_TYPE
+        );
+      };
       // ReactComponent.js
       function ReactComponent(props, context, updater) {
         this.props = props;
@@ -458,6 +484,31 @@
         receiveComponent: function () {
           console.log("receive component todo...3");
         },
+        _renderValidatedComponentWithoutOwnerOrContext: function () {
+          var inst = this._instance;
+          var renderedComponent = inst.render();
+
+          return renderedComponent;
+        },
+        _renderValidatedComponent: function () {
+          var renderedComponent;
+          ReactCurrentOwner.current = this;
+          try {
+            renderedComponent = this._renderValidatedComponentWithoutOwnerOrContext();
+          } finally {
+            ReactCurrentOwner.current = null;
+          }
+          invariant(
+            // TODO: An `isValidNode` function would probably be more appropriate
+            renderedComponent === null ||
+              renderedComponent === false ||
+              ReactElement.isValidElement(renderedComponent),
+            "%s.render(): A valid React element (or null) must be returned. You may have " +
+              "returned undefined, an array or some other invalid object.",
+            this.getName() || "ReactCompositeComponent"
+          );
+          return renderedComponent;
+        },
         performInitialMount: function (
           renderedElement,
           nativeParent,
@@ -490,7 +541,7 @@
             transaction,
             nativeParent,
             nativeContainerInfo,
-            this._processChildContext(context)
+            // this._processChildContext(context)
           );
 
           return markup;
@@ -528,7 +579,10 @@
       };
       Object.assign(
         ReactCompositeComponentWrapper.prototype,
-        ReactCompositeComponent.Mixin
+        ReactCompositeComponent.Mixin,
+        {
+          _instantiateReactComponent: instantiateReactComponent
+        }
       );
       function isInternalComponentType(type) {
         return (
