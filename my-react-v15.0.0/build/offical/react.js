@@ -6762,6 +6762,7 @@ ReactDOMComponent.Mixin = {
     }
 
     var mountImage;
+    debugger
     if (transaction.useCreateElement) {
       var ownerDocument = nativeContainerInfo._ownerDocument;
       var el;
