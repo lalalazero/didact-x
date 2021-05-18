@@ -216,9 +216,37 @@ var ReactDOMTextComponent = function (text) {
 };
 
 Object.assign(ReactDOMTextComponent.prototype, {
-  mountComponent: function () {
+  mountComponent: function (
+    transaction,
+    nativeParent,
+    nativeContainerInfo,
+    context
+  ) {
     console.log("enter ---> ReactDOMTextComponent.mountComponent");
-    console.log("todo mountComponent..");
+
+    var domID = nativeContainerInfo._idCounter++;
+    var openingValue = " react-text: " + domID + " ";
+    var closingValue = " /react-text ";
+    this._domID = domID;
+    this._nativeParent = nativeParent;
+    if (transaction.useCreateElement) {
+      var ownerDocument = nativeContainerInfo._ownerDocument;
+      var openingComment = ownerDocument.createComment(openingValue);
+      var closingComment = ownerDocument.createComment(closingValue);
+      var lazyTree = DOMLazyTree(ownerDocument.createDocumentFragment());
+      DOMLazyTree.queueChild(lazyTree, DOMLazyTree(openingComment));
+      if (this._stringText) {
+        DOMLazyTree.queueChild(
+          lazyTree,
+          DOMLazyTree(ownerDocument.createTextNode(this._stringText))
+        );
+      }
+      DOMLazyTree.queueChild(lazyTree, DOMLazyTree(closingComment));
+      // ReactDOMComponentTree.precacheNode(this, openingComment);
+      this._closingComment = closingComment;
+      return lazyTree;
+    } else {
+    }
   },
   receiveComponent: function () {
     console.log("todo mountComponent..");
@@ -234,7 +262,7 @@ var DOMNamespaces = {
 
 // ReactDOMComponentTree.js
 var internalInstanceKey =
-  '__reactInternalInstance$' + Math.random().toString(36).slice(2);
+  "__reactInternalInstance$" + Math.random().toString(36).slice(2);
 /**
  * Drill down (through composites and empty components) until we get a native or
  * native text component.
@@ -244,22 +272,120 @@ var internalInstanceKey =
  */
 function getRenderedNativeOrTextFromComponent(component) {
   var rendered;
-  while((rendered = component._renderedComponent)) {
-    component = rendered
+  while ((rendered = component._renderedComponent)) {
+    component = rendered;
   }
 
-  return component
+  return component;
 }
 var ReactDOMComponentTree = {
-  precacheNode: function(inst, node) {
+  precacheNode: function (inst, node) {
     var nativeInst = getRenderedNativeOrTextFromComponent(inst);
     nativeInst._nativeNode = node;
     node[internalInstanceKey] = nativeInst;
+  },
+};
+
+// DOMLazyTree.js
+
+var enableLazy =
+  (typeof document !== "undefined" &&
+    typeof document.documentMode === "number") ||
+  (typeof navigator !== "undefined" &&
+    typeof navigator.userAgent === "string" &&
+    /\bEdge\/\d/.test(navigator.userAgent));
+
+console.log("enableLazy", enableLazy);
+
+function DOMLazyTree(node) {
+  return {
+    node: node,
+    children: [],
+    html: null,
+    text: null,
+  };
+}
+
+function queueChild(parentTree, childTree) {
+  if (enableLazy) {
+    parentTree.children.push(childTree);
+  } else {
+    console.log("parentTree.node", parentTree.node);
+    console.log("childTree.node", childTree.node);
+    parentTree.node.appendChild(childTree.node);
   }
 }
 
+function insertTreeBefore(parentNode, tree, referenceNode) {
+  // DocumentFragments aren't actually part of the DOM after insertion so
+  // appending children won't update the DOM. We need to ensure the fragment
+  // is properly populated first, breaking out of our lazy approach for just
+  // this level.
+  if (tree.node.nodeType === 11) {
+    insertTreeChildren(tree);
+    parentNode.insertBefore(tree.node, referenceNode);
+  } else {
+    parentNode.insertBefore(tree.node, referenceNode);
+    insertTreeChildren(tree);
+  }
+}
+
+function insertTreeChildren(tree) {
+  if(!enableLazy) {
+    return;
+  }
+}
+
+DOMLazyTree.queueChild = queueChild;
+DOMLazyTree.insertTreeBefore = insertTreeBefore;
+
+// ReactMultiChild.js
+var ReactMultiChild = {
+  Mixin: {
+    _reconcilerInstantiateChildren: function (
+      nestedChildren,
+      transaction,
+      context
+    ) {
+      return ReactChildReconciler.instantiateChildren(
+        nestedChildren,
+        transaction,
+        context
+      );
+    },
+    mountChildren: function (nestedChildren, transaction, context) {
+      var children = this._reconcilerInstantiateChildren(
+        nestedChildren,
+        transaction,
+        context
+      );
+      this._renderedChildren = children;
+
+      var mountImages = [];
+      var index = 0;
+      for (var name in children) {
+        if (children.hasOwnProperty(name)) {
+          var child = children[name];
+          var mountImage = ReactReconciler.mountComponent(
+            child,
+            transaction,
+            this,
+            this._nativeContainerInfo,
+            context
+          );
+          child._mountIndex = index++;
+          mountImages.push(mountImage);
+        }
+      }
+
+      return mountImages;
+    },
+  },
+};
+
 // ReactDOMComponent.js
 var globalIdCounter = 1;
+var CONTENT_TYPES = { string: true, number: true };
 function ReactDOMComponent(element) {
   var tag = element.type;
   // validateDangerousTag(tag);
@@ -281,6 +407,7 @@ function ReactDOMComponent(element) {
 
 ReactDOMComponent.displayName = "ReactDOMComponent";
 ReactDOMComponent.Mixin = {
+  _updateDOMProperties: function (lastProps, nextProps, transaction) {},
   mountComponent: function (
     transaction,
     nativeParent,
@@ -288,7 +415,6 @@ ReactDOMComponent.Mixin = {
     context
   ) {
     console.log("enter --> ReactDOMComponent.mountComponent");
-    debugger;
     this._rootNodeID = globalIdCounter++;
     this._domID = nativeContainerInfo._idCounter++;
     this._nativeParent = nativeParent;
@@ -356,12 +482,12 @@ ReactDOMComponent.Mixin = {
         );
       }
 
-      ReactDOMComponentTree.precacheNode(this, el);
-      this._flags != Flags.hasCachedChildNodes;
-      if (!this._nativeParent) {
-        DOMPropertyOperations.setAttributeForRoot(el);
-      }
-      this._updateDOMProperties(null, props, transaction);
+      // ReactDOMComponentTree.precacheNode(this, el);
+      // this._flags != Flags.hasCachedChildNodes;
+      // if (!this._nativeParent) {
+      //   DOMPropertyOperations.setAttributeForRoot(el);
+      // }
+      // this._updateDOMProperties(null, props, transaction);
       var lazyTree = DOMLazyTree(el);
       this._createInitialChildren(transaction, props, context, lazyTree);
       mountImage = lazyTree;
@@ -384,11 +510,42 @@ ReactDOMComponent.Mixin = {
   receiveComponent: function () {
     console.log("receiveComponent todo..");
   },
+  _createInitialChildren: function (transaction, props, context, lazyTree) {
+    // Intentional use of != to avoid catching zero/false.
+    var innerHTML = props.dangerouslySetInnerHTML;
+    if (innerHTML != null) {
+      if (innerHTML.__html != null) {
+        DOMLazyTree.queueHTML(lazyTree, innerHTML.__html);
+      }
+    } else {
+      var contentToUse = CONTENT_TYPES[typeof props.children]
+        ? props.children
+        : null;
+
+      var childrenToUse = contentToUse != null ? null : props.children;
+      if (contentToUse != null) {
+        // TODO: Validate that text is allowed as a child of this node
+        DOMLazyTree.queueText(lazyTree, contentToUse);
+      } else if (childrenToUse != null) {
+        // console.log("this", this);
+        // console.log("this.prototype", this.prototype);
+        var mountImages = this.mountChildren(
+          childrenToUse,
+          transaction,
+          context
+        );
+
+        for (var i = 0; i < mountImages.length; i++) {
+          DOMLazyTree.queueChild(lazyTree, mountImages[i]);
+        }
+      }
+    }
+  },
 };
 Object.assign(
   ReactDOMComponent.prototype,
-  ReactDOMComponent.Mixin
-  //  ReactMultiChild.Mixin
+  ReactDOMComponent.Mixin,
+  ReactMultiChild.Mixin
 );
 // ReactInstanceMap.js
 /**
@@ -430,6 +587,25 @@ var ReactInstanceMap = {
 var ReactUpdateQueue = {};
 
 // ================ Reconciler        =================
+// ReactChildReconciler.js
+function instantiateChild(childInstances, child, name) {
+  // We found a component instance.
+  var keyUnique = childInstances[name] === undefined;
+  if (child != null && keyUnique) {
+    childInstances[name] = instantiateReactComponent(child);
+  }
+}
+var ReactChildReconciler = {
+  instantiateChildren: function (nestedChildNodes, transaction, context) {
+    if (nestedChildNodes == null) {
+      return null;
+    }
+
+    var childInstances = {};
+    traverseAllChildren(nestedChildNodes, instantiateChild, childInstances);
+    return childInstances;
+  },
+};
 // ReactReconciler.js
 var ReactReconciler = {
   mountComponent: function (
@@ -666,7 +842,6 @@ var ReactCompositeComponentMixin = {
       nativeContainerInfo
       // this._processChildContext(context)
     );
-
     return markup;
   },
   getName: function () {
@@ -801,7 +976,7 @@ function batchedMountComponentIntoNode(
   shouldReuseMarkup,
   context
 ) {
-  var transaction = null;
+  var transaction = {};
   // 暂时省略 transaction 部分
   // var transaction = ReactUpdates.ReactReconcilerTransaction.getPooled(
   //   true
@@ -818,7 +993,7 @@ function batchedMountComponentIntoNode(
   // ReactUpdates.ReactReconcilerTransaction.release(transaction);
   // 其实就是直接调用了
   mountComponentIntoNode.call(
-    null,
+    transaction,
     componentInstance,
     container,
     transaction,
@@ -841,6 +1016,20 @@ var ReactMount = {
           container.nodeType === DOCUMENT_FRAGMENT_NODE_TYPE),
       "mountComponentIntoNode(...): Target container is not valid."
     );
+
+    if (shouldReuseMarkup) {
+      // 省略
+    } else {
+      // 省略 checksum
+    }
+
+    if (transaction.useCreateElement) {
+      while (container.lastChild) {
+        container.removeChild(container.lastChild);
+      }
+      DOMLazyTree.insertTreeBefore(container, markup, null);
+    } else {
+    }
   },
   _renderNewRootComponent: function (
     nextElement,
@@ -931,3 +1120,86 @@ var invariant = function (condition, format, a, b, c, d, e, f) {
     throw error;
   }
 };
+
+// traverseAllChildren.js
+var SEPARATOR = ".";
+var SUBSEPARATOR = ":";
+
+function traverseAllChildren(children, callback, traverseContext) {
+  if (children == null) {
+    return 0;
+  }
+
+  return traverseAllChildrenImpl(children, "", callback, traverseContext);
+}
+
+function traverseAllChildrenImpl(
+  children,
+  nameSoFar,
+  callback,
+  traverseContext
+) {
+  var type = typeof children;
+
+  if (type === "undefined" || type === "boolean") {
+    children = null;
+  }
+
+  if (
+    children === null ||
+    type === "string" ||
+    type === "number" ||
+    ReactElement.isValidElement(children)
+  ) {
+    callback(
+      traverseContext,
+      children,
+      // If it's the only child, treat the name as if it was wrapped in an array
+      // so that it's consistent if the number of children grows.
+      nameSoFar === "" ? SEPARATOR + getComponentKey(children, 0) : nameSoFar
+    );
+    return 1;
+  }
+
+  var child;
+  var nextName;
+  var subtreeCount = 0; // Count of children found in the current subtree.
+  var nextNamePrefix = nameSoFar === "" ? SEPARATOR : nameSoFar + SUBSEPARATOR;
+
+  if (Array.isArray(children)) {
+    for (var i = 0; i < children.length; i++) {
+      child = children[i];
+      nextName = nextNamePrefix + getComponentKey(child, i);
+      subtreeCount += traverseAllChildrenImpl(
+        child,
+        nextName,
+        callback,
+        traverseContext
+      );
+    }
+  } else {
+    var iteratorFn = getIteratorFn(children);
+    if (iteratorFn) {
+      var iterator = iteratorFn.call(children);
+      var step;
+      // 省略
+    } else if (type === "object") {
+      var addendum = "";
+      // 省略
+    }
+  }
+
+  return subtreeCount;
+}
+
+function getComponentKey(component, index) {
+  // Do some typechecking here since we call this blindly. We want to ensure
+  // that we don't block potential future ES APIs.
+  if (component && typeof component === "object" && component.key != null) {
+    // Explicit key
+    // 省略
+    // return wrapUserProvidedKey(component.key);
+  }
+  // Implicit key determined by the index in the set
+  return index.toString(36);
+}
