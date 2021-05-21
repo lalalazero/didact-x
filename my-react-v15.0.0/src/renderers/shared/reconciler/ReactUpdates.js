@@ -1,16 +1,11 @@
-var defaultBatchingStrategy = require('./ReactDefaultBatchingStrategy')
-
-// 这里是根据 injection 来的，会有不同的策略（比如 ssr 是不同的）。为了学习，这里简化了直接用默认的
-var batchingStrategy = defaultBatchingStrategy
-
-
-function batchedUpdates(callback, a, b, c, d, e) {
-    batchingStrategy.batchedUpdates(callback, a, b, c, d, e);
-}
-
+// ReactUpdates.js
 var ReactUpdates = {
-    batchedUpdates: batchedUpdates,
-}
+  batchedUpdates: function (callback, a, b, c, d, e) {
+    // 省略 transaction 部分
+    // ReactDefaultBatchingStrategy.batchedUpdates(callback, a, b, c, d, e);
+    // 直接调
+    callback.call(null, a, b, c, d, e);
+  },
+};
 
-
-module.exports = ReactUpdates
+module.exports = ReactUpdates;
