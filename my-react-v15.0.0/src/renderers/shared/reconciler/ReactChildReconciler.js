@@ -1,4 +1,8 @@
 // ReactChildReconciler.js
+
+var instantiateReactComponent = require('instantiateReactComponent')
+var traverseAllChildren = require('traverseAllChildren')
+
 function instantiateChild(childInstances, child, name) {
   // We found a component instance.
   var keyUnique = childInstances[name] === undefined;

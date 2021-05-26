@@ -1,0 +1,19 @@
+{
+  "name": "my-react-v15.0.0",
+  "version": "1.0.0",
+  "description": "We have several examples [on the website](https://facebook.github.io/react/). Here is the first one to get you started:",
+  "main": "React.umd.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-alias": "^3.1.2",
+    "@rollup/plugin-commonjs": "^19.0.0"
+  }
+}

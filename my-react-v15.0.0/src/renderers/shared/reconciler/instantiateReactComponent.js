@@ -1,5 +1,9 @@
 // instantiateReactComponent.js
 // To avoid a cyclic dependency, we create the final class in this module
+
+var ReactNativeComponent = require('ReactNativeComponent')
+
+
 var ReactCompositeComponentWrapper = function (element) {
   this.construct(element);
 };

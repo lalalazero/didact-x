@@ -1,4 +1,11 @@
 // ReactMount.js
+
+var ReactReconciler = require('ReactReconciler')
+var ReactDOMContainerInfo = require('ReactDOMContainerInfo')
+var instantiateReactComponent = require('instantiateReactComponent')
+var ReactElement = require('ReactElement')
+var ReactUpdates = require('ReactUpdates')
+
 var ELEMENT_NODE_TYPE = 1;
 var topLevelRootCounter = 1;
 var DOCUMENT_FRAGMENT_NODE_TYPE = 11;

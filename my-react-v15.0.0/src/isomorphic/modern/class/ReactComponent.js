@@ -1,4 +1,7 @@
 // ReactComponent.js
+
+var ReactNoopUpdateQueue = require('ReactNoopUpdateQueue')
+
 function ReactComponent(props, context, updater) {
   this.props = props;
   // this.context = context;

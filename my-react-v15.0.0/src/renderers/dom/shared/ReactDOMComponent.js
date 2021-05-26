@@ -1,4 +1,7 @@
 // ReactDOMComponent.js
+
+var ReactMultiChild = require('ReactMultiChild')
+
 var globalIdCounter = 1;
 var CONTENT_TYPES = { string: true, number: true };
 function ReactDOMComponent(element) {
