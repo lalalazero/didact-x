@@ -2,6 +2,7 @@
 // To avoid a cyclic dependency, we create the final class in this module
 
 var ReactNativeComponent = require('ReactNativeComponent')
+var ReactCompositeComponent = require('ReactCompositeComponent')
 
 
 var ReactCompositeComponentWrapper = function (element) {

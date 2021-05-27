@@ -1,18 +1,23 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('ReactCurrentOwner'), require('ReactComponent'), require('invariant')) :
-  typeof define === 'function' && define.amd ? define(['ReactCurrentOwner', 'ReactComponent', 'invariant'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.React = factory(global.require$$0, global.require$$0$1, global.require$$2));
-}(this, (function (require$$0, require$$0$1, require$$2) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('ReactNoopUpdateQueue')) :
+  typeof define === 'function' && define.amd ? define(['ReactNoopUpdateQueue'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.React = factory(global.require$$0));
+}(this, (function (require$$0) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
   var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
-  var require$$0__default$1 = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
-  var require$$2__default = /*#__PURE__*/_interopDefaultLegacy(require$$2);
+
+  // ReactCurrentOwner.js
+  var ReactCurrentOwner$1 = {
+    current: null,
+  };
+
+  var ReactCurrentOwner_1 = ReactCurrentOwner$1;
 
   // ReactElement.js
 
-  var ReactCurrentOwner = require$$0__default['default'];
+  var ReactCurrentOwner = ReactCurrentOwner_1;
 
 
   var REACT_ELEMENT_TYPE =
@@ -100,12 +105,56 @@
 
   var ReactElement_1 = ReactElement$2;
 
+  // ReactComponent.js
+
+  var ReactNoopUpdateQueue = require$$0__default['default'];
+
+  function ReactComponent$1(props, context, updater) {
+    this.props = props;
+    // this.context = context;
+    // this.refs = emptyObject;
+    this.updater = updater || ReactNoopUpdateQueue;
+  }
+
+  ReactComponent$1.prototype.isReactComponent = {};
+
+
+
+  var ReactComponent_1 = ReactComponent$1;
+
+  // 其他辅助类库
+  var invariant$1 = function (condition, format, a, b, c, d, e, f) {
+    if (!condition) {
+      var error;
+      if (format === undefined) {
+        error = new Error(
+          "Minified exception occurred; use the non-minified dev environment " +
+            "for the full error message and additional helpful warnings."
+        );
+      } else {
+        var args = [a, b, c, d, e, f];
+        var argIndex = 0;
+        error = new Error(
+          format.replace(/%s/g, function () {
+            return args[argIndex++];
+          })
+        );
+        error.name = "Invariant Violation";
+      }
+
+      error.framesToPop = 1; // we don't care about invariant's own frame
+      throw error;
+    }
+  };
+
+  var invariant_1 = invariant$1;
+
   // ReactClass.js
 
-  var ReactComponent = require$$0__default$1['default'];
+  var ReactComponent = ReactComponent_1;
   var ReactElement$1 = ReactElement_1;
 
-  var invariant = require$$2__default['default'];
+  var invariant = invariant_1;
 
   function mixSpecIntoComponent(Constructor, spec) {
     if (!spec) {

@@ -9,6 +9,13 @@ const plugins = [commonjs(), alias({
         { find: 'ReactClass', replacement: 'src/isomorphic/classic/class/ReactClass.js'},
         { find: 'ReactCurrentOwner', replacement: 'src/isomorphic/classic/element/ReactCurrentOwner.js'},
         { find: 'ReactComponent', replacement: 'src/isomorphic/modern/class/ReactComponent.js'},
+        { find: 'instantiateReactComponent', replacement: 'src/renderers/shared/reconciler/instantiateReactComponent.js'},
+        { find: 'ReactCompositeComponent', replacement: 'src/renderers/shared/reconciler/ReactCompositeComponent.js'},
+        { find: 'ReactUpdates', replacement: 'src/renderers/shared/reconciler/ReactUpdates.js'},
+        { find: 'ReactMount', replacement: 'src/renderers/dom/client/ReactMount.js'},
+        { find: 'invariant', replacement: 'src/util/invariant.js'},
+        { find: 'emptyObject', replacement: 'src/util/emptyObject.js'},
+        
     ]
 })]
 
