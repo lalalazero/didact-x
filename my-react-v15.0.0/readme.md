@@ -1,55 +1,17 @@
-## Examples
+### 读 v15.0.0 源码，简单实现主要流程
 
-We have several examples [on the website](https://facebook.github.io/react/). Here is the first one to get you started:
+### tag
 
-```js
-var HelloMessage = React.createClass({
-  render: function() {
-    return <div>Hello {this.props.name}</div>;
-  }
-});
-
-ReactDOM.render(
-  <HelloMessage name="John" />,
-  document.getElementById('container')
-);
-```
-
-This example will render "Hello John" into a container on the page.
+- v20210418 不考虑 transaction 和事件系统，一个最简单的 div 加文字内容 render到页面上（首次mount的情况)，所有逻辑写在一个 js 文件里
+- v20210527 单一 js 按照源码目录进行拆分并用 rollup 打包跑通了
 
 
-### Building Your Copy of React
 
-The process to build `react.js` is built entirely on top of node.js, using many libraries you may already be familiar with.
+### todo 
 
-#### Prerequisites
-
-* You have `node` installed at v4.0.0+ and `npm` at v2.0.0+.
-* You are familiar with `npm` and know whether or not you need to use `sudo` when installing packages globally.
-* You are familiar with `git`.
-
-#### Build
-
-Once you have the repository cloned, building a copy of `react.js` is really easy.
-
-```sh
-# grunt-cli is needed by grunt; you might have this installed already
-npm install -g grunt-cli
-npm install
-grunt build
-```
-
-At this point, you should now have a `build/` directory populated with everything you need to use React. The examples should all work.
-
-### Grunt
-
-We use grunt to automate many tasks. Run `grunt -h` to see a mostly complete listing. The important ones to know:
-
-```sh
-# Build and run tests with PhantomJS
-grunt test
-# Lint the code with ESLint
-grunt lint
-# Wipe out build directory
-grunt clean
-```
+- setState
+- transaction
+- 事件系统
+- diff 算法
+- 生命周期钩子
+- 性能优化
