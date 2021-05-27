@@ -1,12 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('ReactNoopUpdateQueue')) :
-  typeof define === 'function' && define.amd ? define(['ReactNoopUpdateQueue'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.React = factory(global.require$$0));
-}(this, (function (require$$0) { 'use strict';
-
-  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-  var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.React = factory());
+}(this, (function () { 'use strict';
 
   // ReactCurrentOwner.js
   var ReactCurrentOwner$1 = {
@@ -105,9 +101,16 @@
 
   var ReactElement_1 = ReactElement$2;
 
+  // ReactNoopUpdateQueue.js
+  var ReactNoopUpdateQueue$1 = {
+    // todo
+  };
+
+  var ReactNoopUpdateQueue_1 = ReactNoopUpdateQueue$1;
+
   // ReactComponent.js
 
-  var ReactNoopUpdateQueue = require$$0__default['default'];
+  var ReactNoopUpdateQueue = ReactNoopUpdateQueue_1;
 
   function ReactComponent$1(props, context, updater) {
     this.props = props;

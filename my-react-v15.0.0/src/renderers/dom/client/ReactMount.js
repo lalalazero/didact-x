@@ -7,6 +7,7 @@ var ReactElement = require('ReactElement')
 var ReactUpdates = require('ReactUpdates')
 var invariant = require('invariant')
 var emptyObject = require('emptyObject')
+var DOMLazyTree = require('DOMLazyTree')
 
 
 var ELEMENT_NODE_TYPE = 1;

@@ -1,10 +1,9 @@
 // instantiateReactComponent.js
-// To avoid a cyclic dependency, we create the final class in this module
 
 var ReactNativeComponent = require('ReactNativeComponent')
 var ReactCompositeComponent = require('ReactCompositeComponent')
 
-
+// To avoid a cyclic dependency, we create the final class in this module
 var ReactCompositeComponentWrapper = function (element) {
   this.construct(element);
 };
@@ -15,6 +14,7 @@ Object.assign(
     _instantiateReactComponent: instantiateReactComponent,
   }
 );
+
 function isInternalComponentType(type) {
   return (
     typeof type === "function" &&
@@ -47,5 +47,7 @@ function instantiateReactComponent(node) {
   instance._mountImage = null;
   return instance;
 }
+
+
 
 module.exports = instantiateReactComponent;

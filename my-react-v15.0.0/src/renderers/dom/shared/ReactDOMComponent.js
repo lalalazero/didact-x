@@ -1,6 +1,8 @@
 // ReactDOMComponent.js
 
 var ReactMultiChild = require('ReactMultiChild')
+var DOMNamespaces = require('DOMNamespaces')
+var DOMLazyTree = require('DOMLazyTree')
 
 var globalIdCounter = 1;
 var CONTENT_TYPES = { string: true, number: true };

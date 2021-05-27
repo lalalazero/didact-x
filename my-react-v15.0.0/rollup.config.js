@@ -15,7 +15,21 @@ const plugins = [commonjs(), alias({
         { find: 'ReactMount', replacement: 'src/renderers/dom/client/ReactMount.js'},
         { find: 'invariant', replacement: 'src/util/invariant.js'},
         { find: 'emptyObject', replacement: 'src/util/emptyObject.js'},
-        
+        { find: 'ReactNoopUpdateQueue', replacement: 'src/isomorphic/modern/class/ReactNoopUpdateQueue.js'},
+        { find: 'ReactDOMComponent', replacement: 'src/renderers/dom/shared/ReactDOMComponent.js'},
+        { find: 'ReactDOMTextComponent', replacement: 'src/renderers/dom/shared/ReactDOMTextComponent.js'},
+        { find: 'ReactDOMContainerInfo', replacement: 'src/renderers/dom/shared/ReactDOMContainerInfo.js'},
+        { find: 'ReactReconciler', replacement: 'src/renderers/shared/reconciler/ReactReconciler.js'},
+        { find: 'ReactInstanceMap', replacement: 'src/renderers/shared/reconciler/ReactInstanceMap.js'},
+        { find: 'ReactNodeTypes', replacement: 'src/shared/utils/ReactNodeTypes.js'},
+        { find: 'ReactNativeComponent', replacement: 'src/renderers/shared/reconciler/ReactNativeComponent.js'},
+        { find: 'ReactMultiChild', replacement: 'src/renderers/shared/reconciler/ReactMultiChild.js'},
+        { find: 'ReactUpdateQueue', replacement: 'src/renderers/shared/reconciler/ReactUpdateQueue.js'},
+        { find: 'DOMNamespaces', replacement: 'src/renderers/dom/shared/DOMNamespaces.js'},
+        { find: 'DOMLazyTree', replacement: 'src/renderers/dom/client/utils/DOMLazyTree.js'},
+        { find: 'ReactChildReconciler', replacement: 'src/renderers/shared/reconciler/ReactChildReconciler.js'},
+        { find: 'traverseAllChildren', replacement: 'src/shared/utils/traverseAllChildren.js'},
+        { find: 'ReactDefaultInjection', replacement: 'src/renderers/dom/shared/ReactDefaultInjection.js'}
     ]
 })]
 

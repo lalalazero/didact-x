@@ -1,4 +1,7 @@
 // ReactDOMTextComponent.js
+var DOMLazyTree = require('DOMLazyTree')
+
+
 var ReactDOMTextComponent = function (text) {
   // TODO: This is really a ReactText (ReactNode), not a ReactElement
   this._currentElement = text;

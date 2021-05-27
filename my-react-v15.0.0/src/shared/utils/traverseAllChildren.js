@@ -2,6 +2,8 @@
 var SEPARATOR = ".";
 var SUBSEPARATOR = ":";
 
+var ReactElement = require('ReactElement')
+
 function traverseAllChildren(children, callback, traverseContext) {
   if (children == null) {
     return 0;

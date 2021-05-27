@@ -1,4 +1,13 @@
 // ReactCompositeComponent.js
+var emptyObject = require('emptyObject')
+var ReactUpdateQueue = require('ReactUpdateQueue')
+var ReactInstanceMap = require('ReactInstanceMap')
+var invariant = require('invariant')
+var ReactCurrentOwner = require('ReactCurrentOwner')
+var ReactElement = require('ReactElement')
+var ReactNodeTypes = require('ReactNodeTypes')
+var ReactReconciler = require('ReactReconciler')
+
 var nextMountID = 1;
 var ReactCompositeComponentMixin = {
   construct: function (element) {

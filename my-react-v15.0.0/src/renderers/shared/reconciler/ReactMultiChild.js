@@ -1,4 +1,7 @@
 // ReactMultiChild.js
+var ReactChildReconciler = require('ReactChildReconciler')
+var ReactReconciler = require('ReactReconciler')
+
 var ReactMultiChild = {
   Mixin: {
     _reconcilerInstantiateChildren: function (
