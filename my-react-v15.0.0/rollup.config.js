@@ -37,7 +37,7 @@ export default [
     {
         input: 'src/isomorphic/React.js',
         output: {
-            file: 'React.umd.js',
+            file: 'build/mine/React.umd.js',
             format: 'umd',
             name: 'React',
         },
@@ -46,7 +46,7 @@ export default [
     {
         input: 'src/renderers/dom/ReactDOM.js',
         output: {
-            file: 'ReactDOM.umd.js',
+            file: 'build/mine/ReactDOM.umd.js',
             format: 'umd',
             name: 'ReactDOM'
         },
