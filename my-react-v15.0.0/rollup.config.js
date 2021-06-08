@@ -29,7 +29,8 @@ const plugins = [commonjs(), alias({
         { find: 'DOMLazyTree', replacement: 'src/renderers/dom/client/utils/DOMLazyTree.js'},
         { find: 'ReactChildReconciler', replacement: 'src/renderers/shared/reconciler/ReactChildReconciler.js'},
         { find: 'traverseAllChildren', replacement: 'src/shared/utils/traverseAllChildren.js'},
-        { find: 'ReactDefaultInjection', replacement: 'src/renderers/dom/shared/ReactDefaultInjection.js'}
+        { find: 'ReactDefaultInjection', replacement: 'src/renderers/dom/shared/ReactDefaultInjection.js'},
+        { find: 'shouldUpdateReactComponent', replacement: 'src/renderers/shared/reconciler/shouldUpdateReactComponent.js'}
     ]
 })]
 

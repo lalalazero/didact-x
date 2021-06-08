@@ -5,7 +5,25 @@
 }(this, (function () { 'use strict';
 
   // ReactReconciler.js
-  var ReactReconciler$3 = {
+  var ReactReconciler$4 = {
+    /**
+     * Update a component using a new element
+     * 
+     * @param {*} internalInstance 
+     * @param {*} nextElement 
+     * @param {*} transaction 
+     * @param {*} context 
+     */
+    receiveComponent: function(internalInstance, nextElement, transaction, context) {
+      var prevElement = internalInstance._currentElement;
+
+      if (nextElement === prevElement && context === internalInstance._context) {
+        console.log('进入了 receiveComponent 但是不用做什么东西');
+        return
+      }
+
+      internalInstance.receiveComponent(nextElement, transaction, context);
+    },
     mountComponent: function (
       internalInstance,
       transaction,
@@ -14,10 +32,16 @@
       context
     ) {
       console.log("enter --> ReactReconciler.mountComponent");
-      console.log('当前的 instance', internalInstance);
-      console.log('当前的 instance._currentElement.type', internalInstance._currentElement.type);
-      console.log('当前的 instance._currentElement', internalInstance._currentElement);
-      console.log('--------------------------------------------');
+      console.log("当前的 instance", internalInstance);
+      console.log(
+        "当前的 instance._currentElement.type",
+        internalInstance._currentElement.type
+      );
+      console.log(
+        "当前的 instance._currentElement",
+        internalInstance._currentElement
+      );
+      console.log("--------------------------------------------");
       var markup = internalInstance.mountComponent(
         transaction,
         nativeParent,
@@ -26,9 +50,19 @@
       );
       return markup;
     },
+    /**
+     * Flush any dirty changes in a component.
+     *
+     * @param {ReactComponent} internalInstance
+     * @param {ReactReconcileTransaction} transaction
+     * @internal
+     */
+    performUpdateIfNecessary: function (internalInstance, transaction) {
+      internalInstance.performUpdateIfNecessary(transaction);
+    },
   };
 
-  var ReactReconciler_1 = ReactReconciler$3;
+  var ReactReconciler_1 = ReactReconciler$4;
 
   // ReactDOMContainerInfo.js
   var DOC_NODE_TYPE$1 = 9;
@@ -90,15 +124,6 @@
 
   var emptyObject$2 = {};
 
-  // ReactUpdateQueue.js
-  /**
-   * ReactUpdateQueue allows for state updates to be scheduled into a later
-   * reconciliation step.
-   */
-  var ReactUpdateQueue$1 = {};
-
-  var ReactUpdateQueue_1 = ReactUpdateQueue$1;
-
   // ReactInstanceMap.js
   /**
    * `ReactInstanceMap` maintains a mapping from a public facing stateful
@@ -108,7 +133,7 @@
    */
 
   // TODO: Replace this with ES6: var ReactInstanceMap = new Map();
-  var ReactInstanceMap$1 = {
+  var ReactInstanceMap$2 = {
     /**
      * This API should be called `delete` but we'd have to make sure to always
      * transform these to strings for IE support. When this transform is fully
@@ -131,7 +156,104 @@
     },
   };
 
-  var ReactInstanceMap_1 = ReactInstanceMap$1;
+  var ReactInstanceMap_1 = ReactInstanceMap$2;
+
+  // ReactUpdates.js
+
+  var ReactReconciler$3 = ReactReconciler_1;
+  var dirtyComponents = [];
+
+
+  function mountOrderComparator(c1, c2) {
+    return c1._mountOrder - c2._mountOrder;
+  }
+
+  var ReactUpdates$2 = {
+    batchedUpdates: function (callback, a, b, c, d, e) {
+      // 省略 transaction 部分
+      // ReactDefaultBatchingStrategy.batchedUpdates(callback, a, b, c, d, e);
+      // 直接调
+      callback.call(null, a, b, c, d, e);
+    },
+    enqueueUpdate: function (component) {
+      dirtyComponents.push(component);
+      // 省略 transaction 的逻辑，直接调用更新
+      runBatchedUpdates();
+    },
+  };
+
+  function runBatchedUpdates(transaction) {
+    // 省略 transaction 的逻辑
+
+    dirtyComponents.sort(mountOrderComparator);
+
+    var len = dirtyComponents.length;
+
+    for (var i = 0; i < len; i++) {
+      // If a component is unmounted before pending changes apply, it will still
+      // be here, but we assume that it has cleared its _pendingCallbacks and
+      // that performUpdateIfNecessary is a noop.
+      var component = dirtyComponents[i];
+
+      // If performUpdateIfNecessary happens to enqueue any new updates, we
+      // shouldn't execute the callbacks until the next render happens, so
+      // stash the callbacks first
+      // var callbacks = component._pendingCallbacks;
+      component._pendingCallbacks = null;
+
+      // var markerName;
+      // if (ReactFeatureFlags.logTopLevelRenders) {
+      //   var namedComponent = component;
+      //   // Duck type TopLevelWrapper. This is probably always true.
+      //   if (
+      //     component._currentElement.props ===
+      //     component._renderedComponent._currentElement
+      //   ) {
+      //     namedComponent = component._renderedComponent;
+      //   }
+      //   markerName = "React update: " + namedComponent.getName();
+      //   console.time(markerName);
+      // }
+
+      ReactReconciler$3.performUpdateIfNecessary(
+        component,
+        // transaction.reconcileTransaction
+      );
+    }
+  }
+
+  var ReactUpdates_1 = ReactUpdates$2;
+
+  var ReactInstanceMap$1 = ReactInstanceMap_1;
+  var ReactUpdates$1 = ReactUpdates_1;
+
+  function enqueueUpdate(internalInstance) {
+    ReactUpdates$1.enqueueUpdate(internalInstance);
+  }
+
+  // ReactUpdateQueue.js
+  /**
+   * ReactUpdateQueue allows for state updates to be scheduled into a later
+   * reconciliation step.
+   */
+  var ReactUpdateQueue$1 = {
+    enqueueSetState: function (publicInstance, partialState) {
+      var internalInstance = ReactInstanceMap$1.get(publicInstance);
+
+      if (!internalInstance) {
+        return;
+      }
+
+      var queue =
+        internalInstance._pendingStateQueue ||
+        (internalInstance._pendingStateQueue = []);
+      queue.push(partialState);
+
+      enqueueUpdate(internalInstance);
+    },
+  };
+
+  var ReactUpdateQueue_1 = ReactUpdateQueue$1;
 
   // 其他辅助类库
   var invariant$3 = function (condition, format, a, b, c, d, e, f) {
@@ -281,6 +403,39 @@
 
   var ReactNodeTypes_1 = ReactNodeTypes$1;
 
+  /**
+   * Given a `prevElement` and `nextElement`, determines if the existing
+   * instance should be updated as opposed to being destroyed or replaced by a new
+   * instance. Both arguments are elements. This ensures that this logic can
+   * operate on stateless trees without any backing instance.
+   *
+   * @param {?object} prevElement
+   * @param {?object} nextElement
+   * @return {boolean} True if the existing instance should be updated.
+   * @protected
+   */
+  function shouldUpdateReactComponent$1(prevElement, nextElement) {
+    var prevEmpty = prevElement === null || prevElement === false;
+    var nextEmpty = nextElement === null || nextElement === false;
+    if (prevEmpty || nextEmpty) {
+      return prevEmpty === nextEmpty;
+    }
+
+    var prevType = typeof prevElement;
+    var nextType = typeof nextElement;
+    if (prevType === "string" || prevType === "number") {
+      return nextType === "string" || nextType === "number";
+    } else {
+      return (
+        nextType === "object" &&
+        prevElement.type === nextElement.type &&
+        prevElement.key === nextElement.key
+      );
+    }
+  }
+
+  var shouldUpdateReactComponent_1 = shouldUpdateReactComponent$1;
+
   // ReactCompositeComponent.js
   var emptyObject$1 = emptyObject$2;
   var ReactUpdateQueue = ReactUpdateQueue_1;
@@ -290,6 +445,7 @@
   var ReactElement$2 = ReactElement_1;
   var ReactNodeTypes = ReactNodeTypes_1;
   var ReactReconciler$2 = ReactReconciler_1;
+  var shouldUpdateReactComponent = shouldUpdateReactComponent_1;
 
   var nextMountID = 1;
   var ReactCompositeComponentMixin = {
@@ -342,6 +498,7 @@
       var maskedContext = this._maskContext(context);
       return maskedContext;
     },
+
     /**
      *  Initializes the component, renders markup, and registers event listeners.
      * */
@@ -437,8 +594,175 @@
 
       return markup;
     },
-    receiveComponent: function () {
-      console.log("receive component todo...3");
+    receiveComponent: function (nextElement, transaction, nextContext) {
+      var prevElement = this._currentElement;
+      var prevContext = this._context;
+
+      this._pendingElement = null;
+
+      this.updateComponent(
+        transaction,
+        prevElement,
+        nextElement,
+        prevContext,
+        nextContext
+      );
+    },
+    /**
+     * Perform an update to a mounted component. The componentWillReceiveProps and
+     * shouldComponentUpdate methods are called, then (assuming the update isn't
+     * skipped) the remaining update lifecycle methods are called and the DOM
+     * representation is updated.
+     *
+     * By default, this implements React's rendering and reconciliation algorithm.
+     * Sophisticated clients may wish to override this.
+     *
+     * @param {ReactReconcileTransaction} transaction
+     * @param {ReactElement} prevParentElement
+     * @param {ReactElement} nextParentElement
+     * @internal
+     * @overridable
+     */
+    updateComponent: function (
+      transaction,
+      prevParentElement,
+      nextParentElement,
+      prevUnmaskedContext,
+      nextUnmaskedContext
+    ) {
+      var inst = this._instance;
+      var willReceive = false;
+      var nextContext;
+      var nextProps;
+
+      // Determine if the context has changed or not
+      if (this._context === nextUnmaskedContext) {
+        nextContext = inst.context;
+      } else {
+        nextContext = this._processContext(nextUnmaskedContext);
+        willReceive = true;
+      }
+
+      // Distinguish between a props update versus a simple state update
+      if (prevParentElement === nextParentElement) {
+        // Skip checking prop types again -- we don't read inst.props to avoid
+        // warning for DOM component props in this upgrade
+        nextProps = nextParentElement.props;
+      } else {
+        nextProps = this._processProps(nextParentElement.props);
+        willReceive = true;
+      }
+
+      // An update here will schedule an update but immediately set
+      // _pendingStateQueue which will ensure that any state updates gets
+      // immediately reconciled instead of waiting for the next batch.
+      if (willReceive && inst.componentWillReceiveProps) {
+        inst.componentWillReceiveProps(nextProps, nextContext);
+      }
+
+      var nextState = this._processPendingState(nextProps, nextContext);
+
+      var shouldUpdate =
+        this._pendingForceUpdate ||
+        !inst.shouldComponentUpdate ||
+        inst.shouldComponentUpdate(nextProps, nextState, nextContext);
+
+      if (shouldUpdate) {
+        this._pendingForceUpdate = false;
+        // Will set `this.props`, `this.state` and `this.context`.
+        this._performComponentUpdate(
+          nextParentElement,
+          nextProps,
+          nextState,
+          nextContext,
+          transaction,
+          nextUnmaskedContext
+        );
+      } else {
+        // If it's determined that a component should not update, we still want
+        // to set props and state but we shortcut the rest of the update.
+        this._currentElement = nextParentElement;
+        this._context = nextUnmaskedContext;
+        inst.props = nextProps;
+        inst.state = nextState;
+        inst.context = nextContext;
+      }
+    },
+    /**
+     * Merges new props and state, notifies delegate methods of update and
+     * performs update.
+     *
+     * @param {ReactElement} nextElement Next element
+     * @param {object} nextProps Next public object to set as properties.
+     * @param {?object} nextState Next object to set as state.
+     * @param {?object} nextContext Next public object to set as context.
+     * @param {ReactReconcileTransaction} transaction
+     * @param {?object} unmaskedContext
+     * @private
+     */
+    _performComponentUpdate: function (
+      nextElement,
+      nextProps,
+      nextState,
+      nextContext,
+      transaction,
+      unmaskedContext
+    ) {
+      var inst = this._instance;
+
+      var hasComponentDidUpdate = Boolean(inst.componentDidUpdate);
+      if (hasComponentDidUpdate) {
+        inst.props;
+        inst.state;
+        inst.context;
+      }
+
+      if (inst.componentWillUpdate) {
+        inst.componentWillUpdate(nextProps, nextState, nextContext);
+      }
+
+      this._currentElement = nextElement;
+      this._context = unmaskedContext;
+      inst.props = nextProps;
+      inst.state = nextState;
+      inst.context = nextContext;
+
+      this._updateRenderedComponent(transaction, unmaskedContext);
+    },
+
+    /**
+     * Call the component's `render` method and update the DOM accordingly.
+     *
+     * @param {ReactReconcileTransaction} transaction
+     * @internal
+     */
+    _updateRenderedComponent: function (transaction, context) {
+      var prevComponentInstance = this._renderedComponent;
+      var prevRenderedElement = prevComponentInstance._currentElement;
+      var nextRenderedElement = this._renderValidatedComponent();
+      if (shouldUpdateReactComponent(prevRenderedElement, nextRenderedElement)) {
+        ReactReconciler$2.receiveComponent(
+          prevComponentInstance,
+          nextRenderedElement,
+          transaction,
+          // this._processChildContext(context)
+        );
+      } else {
+        var oldNativeNode = ReactReconciler$2.getNativeNode(prevComponentInstance);
+        ReactReconciler$2.unmountComponent(prevComponentInstance, false);
+
+        this._renderedNodeType = ReactNodeTypes.getType(nextRenderedElement);
+        this._renderedComponent =
+          this._instantiateReactComponent(nextRenderedElement);
+        var nextMarkup = ReactReconciler$2.mountComponent(
+          this._renderedComponent,
+          transaction,
+          this._nativeParent,
+          this._nativeContainerInfo,
+          this._processChildContext(context)
+        );
+        this._replaceNodeWithMarkup(oldNativeNode, nextMarkup);
+      }
     },
     _renderValidatedComponentWithoutOwnerOrContext: function () {
       var inst = this._instance;
@@ -511,6 +835,54 @@
         null
       );
     },
+    performUpdateIfNecessary: function (transaction) {
+      if (this._pendingElement != null) {
+        ReactReconciler$2.receiveComponent(
+          this,
+          this._pendingElement,
+          transaction,
+          this._context
+        );
+      }
+
+      if (this._pendingStateQueue !== null || this._pendingForceUpdate) {
+        this.updateComponent(
+          transaction,
+          this._currentElement,
+          this._currentElement,
+          this._context,
+          this._context
+        );
+      }
+    },
+    _processPendingState: function (props, context) {
+      var inst = this._instance;
+      var queue = this._pendingStateQueue;
+      var replace = this._pendingReplaceState;
+      this._pendingReplaceState = false;
+      this._pendingStateQueue = null;
+
+      if (!queue) {
+        return inst.state;
+      }
+
+      if (replace && queue.length === 1) {
+        return queue[0];
+      }
+
+      var nextState = Object.assign({}, replace ? queue[0] : inst.state);
+      for (var i = replace ? 1 : 0; i < queue.length; i++) {
+        var partial = queue[i];
+        Object.assign(
+          nextState,
+          typeof partial === "function"
+            ? partial.call(inst, nextState, props, context)
+            : partial
+        );
+      }
+
+      return nextState;
+    },
   };
   var ReactCompositeComponent$1 = {
     Mixin: ReactCompositeComponentMixin,
@@ -572,18 +944,6 @@
 
   var instantiateReactComponent_1 = instantiateReactComponent$2;
 
-  // ReactUpdates.js
-  var ReactUpdates$1 = {
-    batchedUpdates: function (callback, a, b, c, d, e) {
-      // 省略 transaction 部分
-      // ReactDefaultBatchingStrategy.batchedUpdates(callback, a, b, c, d, e);
-      // 直接调
-      callback.call(null, a, b, c, d, e);
-    },
-  };
-
-  var ReactUpdates_1 = ReactUpdates$1;
-
   // DOMLazyTree.js
 
   var enableLazy =
@@ -637,8 +997,18 @@
     console.log('insertTreeChildren enableLazy', enableLazy);
   }
 
+  function queueText(tree, text) {
+    if(enableLazy) {
+      tree.text = text;
+    }else {
+      tree.node.textContent = text;
+    }
+  }
+
+
   DOMLazyTree$3.queueChild = queueChild;
   DOMLazyTree$3.insertTreeBefore = insertTreeBefore;
+  DOMLazyTree$3.queueText = queueText;
 
   var DOMLazyTree_1 = DOMLazyTree$3;
 
@@ -918,6 +1288,25 @@
 
   var ReactMultiChild$1 = {
     Mixin: {
+      _reconcilerUpdateChildren: function (
+        prevChildren,
+        nextNestedChildrenElements,
+        removedNodes,
+        transaction,
+        context
+      ) {
+        var nextChildren;
+
+        nextChildren = flattenChildren(nextNestedChildrenElements);
+        ReactChildReconciler.updateChildren(
+          prevChildren,
+          nextChildren,
+          removedNodes,
+          transaction,
+          context
+        );
+        return nextChildren;
+      },
       _reconcilerInstantiateChildren: function (
         nestedChildren,
         transaction,
@@ -955,6 +1344,85 @@
         }
 
         return mountImages;
+      },
+      updateChildren: function (
+        nextNestedChildrenElements,
+        transaction,
+        context
+      ) {
+        this._updateChildren(nextNestedChildrenElements, transaction, context);
+      },
+      _updateChildren: function (
+        nextNestedChildrenElements,
+        transaction,
+        context
+      ) {
+        var prevChildren = this._renderedChildren;
+        var removedNodes = {};
+        var nextChildren = this._reconcilerUpdateChildren(
+          prevChildren,
+          nextNestedChildrenElements,
+          removedNodes,
+          transaction,
+          context
+        );
+        if (!nextChildren && !prevChildren) {
+          return;
+        }
+        var updates = null;
+        var name;
+        // `nextIndex` will increment for each child in `nextChildren`, but
+        // `lastIndex` will be the last index visited in `prevChildren`.
+        var lastIndex = 0;
+        var nextIndex = 0;
+        var lastPlacedNode = null;
+        for (name in nextChildren) {
+          if (!nextChildren.hasOwnProperty(name)) {
+            continue;
+          }
+          var prevChild = prevChildren && prevChildren[name];
+          var nextChild = nextChildren[name];
+          if (prevChild === nextChild) {
+            updates = enqueue(
+              updates,
+              this.moveChild(prevChild, lastPlacedNode, nextIndex, lastIndex)
+            );
+            lastIndex = Math.max(prevChild._mountIndex, lastIndex);
+            prevChild._mountIndex = nextIndex;
+          } else {
+            if (prevChild) {
+              // Update `lastIndex` before `_mountIndex` gets unset by unmounting.
+              lastIndex = Math.max(prevChild._mountIndex, lastIndex);
+              // The `removedNodes` loop below will actually remove the child.
+            }
+            // The child must be instantiated before it's mounted.
+            updates = enqueue(
+              updates,
+              this._mountChildAtIndex(
+                nextChild,
+                lastPlacedNode,
+                nextIndex,
+                transaction,
+                context
+              )
+            );
+          }
+          nextIndex++;
+          lastPlacedNode = ReactReconciler.getNativeNode(nextChild);
+        }
+        // Remove children that are no longer present.
+        for (name in removedNodes) {
+          if (removedNodes.hasOwnProperty(name)) {
+            updates = enqueue(
+              updates,
+              this._unmountChild(prevChildren[name], removedNodes[name])
+            );
+          }
+        }
+        if (updates) {
+          processQueue(this, updates);
+        }
+        this._renderedChildren = nextChildren;
       },
     },
   };
@@ -999,7 +1467,6 @@
 
   ReactDOMComponent$1.displayName = "ReactDOMComponent";
   ReactDOMComponent$1.Mixin = {
-    _updateDOMProperties: function (lastProps, nextProps, transaction) {},
     mountComponent: function (
       transaction,
       nativeParent,
@@ -1090,9 +1557,6 @@
 
       return mountImage;
     },
-    receiveComponent: function () {
-      console.log("receiveComponent todo..");
-    },
     _createInitialChildren: function (transaction, props, context, lazyTree) {
       // Intentional use of != to avoid catching zero/false.
       var innerHTML = props.dangerouslySetInnerHTML;
@@ -1124,6 +1588,99 @@
         }
       }
     },
+    receiveComponent: function (nextElement, transaction, context) {
+      var prevElement = this._currentElement;
+      this._currentElement = nextElement;
+      this.updateComponent(transaction, prevElement, nextElement, context);
+    },
+    /**
+     * Updates a native DOM component after it has already been allocated and
+     * attached to the DOM. Reconciles the root DOM node, then recurses.
+     *
+     * @param {ReactReconcileTransaction} transaction
+     * @param {ReactElement} prevElement
+     * @param {ReactElement} nextElement
+     * @internal
+     * @overridable
+     */
+    updateComponent: function (transaction, prevElement, nextElement, context) {
+      var lastProps = prevElement.props;
+      var nextProps = this._currentElement.props;
+
+      switch (
+        this._tag
+        // case "button":
+        // lastProps = ReactDOMButton.getNativeProps(this, lastProps);
+        // nextProps = ReactDOMButton.getNativeProps(this, nextProps);
+        // break;
+        // case "input":
+        //   ReactDOMInput.updateWrapper(this);
+        //   lastProps = ReactDOMInput.getNativeProps(this, lastProps);
+        //   nextProps = ReactDOMInput.getNativeProps(this, nextProps);
+        //   break;
+        // case "option":
+        //   lastProps = ReactDOMOption.getNativeProps(this, lastProps);
+        //   nextProps = ReactDOMOption.getNativeProps(this, nextProps);
+        //   break;
+        // case "select":
+        //   lastProps = ReactDOMSelect.getNativeProps(this, lastProps);
+        //   nextProps = ReactDOMSelect.getNativeProps(this, nextProps);
+        //   break;
+        // case "textarea":
+        //   ReactDOMTextarea.updateWrapper(this);
+        //   lastProps = ReactDOMTextarea.getNativeProps(this, lastProps);
+        //   nextProps = ReactDOMTextarea.getNativeProps(this, nextProps);
+        //   break;
+      ) {
+      }
+
+      // assertValidProps(this, nextProps);
+      // this._updateDOMProperties(lastProps, nextProps, transaction);
+      this._updateDOMChildren(lastProps, nextProps, transaction, context);
+
+      if (this._tag === "select") ;
+    },
+    _updateDOMChildren: function (lastProps, nextProps, transaction, context) {
+      var lastContent = CONTENT_TYPES[typeof lastProps.children]
+        ? lastProps.children
+        : null;
+      var nextContent = CONTENT_TYPES[typeof nextProps.children]
+        ? nextProps.children
+        : null;
+
+      var lastHtml =
+        lastProps.dangerouslySetInnerHTML &&
+        lastProps.dangerouslySetInnerHTML.__html;
+      var nextHtml =
+        nextProps.dangerouslySetInnerHTML &&
+        nextProps.dangerouslySetInnerHTML.__html;
+
+      // Note the use of `!=` which checks for null or undefined.
+      var lastChildren = lastContent != null ? null : lastProps.children;
+      var nextChildren = nextContent != null ? null : nextProps.children;
+
+      // If we're switching from children to content/html or vice versa, remove
+      // the old content
+      var lastHasContentOrHtml = lastContent != null || lastHtml != null;
+      var nextHasContentOrHtml = nextContent != null || nextHtml != null;
+      if (lastChildren != null && nextChildren == null) {
+        this.updateChildren(null, transaction, context);
+      } else if (lastHasContentOrHtml && !nextHasContentOrHtml) {
+        this.updateTextContent("");
+      }
+
+      if (nextContent != null) {
+        if (lastContent !== nextContent) {
+          this.updateTextContent("" + nextContent);
+        }
+      } else if (nextHtml != null) {
+        if (lastHtml !== nextHtml) {
+          this.updateMarkup("" + nextHtml);
+        }
+      } else if (nextChildren != null) {
+        this.updateChildren(nextChildren, transaction, context);
+      }
+    },
   };
   Object.assign(
     ReactDOMComponent$1.prototype,
@@ -1135,7 +1692,6 @@
 
   // ReactDOMTextComponent.js
   var DOMLazyTree = DOMLazyTree_1;
-
 
   var ReactDOMTextComponent$1 = function (text) {
     // TODO: This is really a ReactText (ReactNode), not a ReactElement
@@ -1185,8 +1741,48 @@
         return lazyTree;
       }
     },
-    receiveComponent: function () {
-      console.log("todo mountComponent..");
+    receiveComponent: function (nextText, transaction) {
+      if (nextText !== this._currentElement) {
+        this._currentElement = nextText;
+        var nextStringText = "" + nextText;
+        if (nextStringText !== this._stringText) {
+          // TODO: Save this as pending props and use performUpdateIfNecessary
+          // and/or updateComponent to do the actual update for consistency with
+          // other component types?
+          this._stringText = nextStringText;
+          var commentNodes = this.getNativeNode();
+          DOMChildrenOperations.replaceDelimitedText(
+            commentNodes[0],
+            commentNodes[1],
+            nextStringText
+          );
+        }
+      }
+    },
+    getNativeNode: function () {
+      var nativeNode = this._commentNodes;
+      if (nativeNode) {
+        return nativeNode;
+      }
+      if (!this._closingComment) {
+        var openingComment = ReactDOMComponentTree.getNodeFromInstance(this);
+        var node = openingComment.nextSibling;
+        while (true) {
+          invariant(
+            node != null,
+            "Missing closing comment for text component %s",
+            this._domID
+          );
+          if (node.nodeType === 8 && node.nodeValue === " /react-text ") {
+            this._closingComment = node;
+            break;
+          }
+          node = node.nextSibling;
+        }
+      }
+      nativeNode = [this._nativeNode, this._closingComment];
+      this._commentNodes = nativeNode;
+      return nativeNode;
     },
   });
 

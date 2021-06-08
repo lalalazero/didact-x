@@ -1,6 +1,5 @@
 // ReactDOMTextComponent.js
-var DOMLazyTree = require('DOMLazyTree')
-
+var DOMLazyTree = require("DOMLazyTree");
 
 var ReactDOMTextComponent = function (text) {
   // TODO: This is really a ReactText (ReactNode), not a ReactElement
@@ -51,8 +50,48 @@ Object.assign(ReactDOMTextComponent.prototype, {
     } else {
     }
   },
-  receiveComponent: function () {
-    console.log("todo mountComponent..");
+  receiveComponent: function (nextText, transaction) {
+    if (nextText !== this._currentElement) {
+      this._currentElement = nextText;
+      var nextStringText = "" + nextText;
+      if (nextStringText !== this._stringText) {
+        // TODO: Save this as pending props and use performUpdateIfNecessary
+        // and/or updateComponent to do the actual update for consistency with
+        // other component types?
+        this._stringText = nextStringText;
+        var commentNodes = this.getNativeNode();
+        DOMChildrenOperations.replaceDelimitedText(
+          commentNodes[0],
+          commentNodes[1],
+          nextStringText
+        );
+      }
+    }
+  },
+  getNativeNode: function () {
+    var nativeNode = this._commentNodes;
+    if (nativeNode) {
+      return nativeNode;
+    }
+    if (!this._closingComment) {
+      var openingComment = ReactDOMComponentTree.getNodeFromInstance(this);
+      var node = openingComment.nextSibling;
+      while (true) {
+        invariant(
+          node != null,
+          "Missing closing comment for text component %s",
+          this._domID
+        );
+        if (node.nodeType === 8 && node.nodeValue === " /react-text ") {
+          this._closingComment = node;
+          break;
+        }
+        node = node.nextSibling;
+      }
+    }
+    nativeNode = [this._nativeNode, this._closingComment];
+    this._commentNodes = nativeNode;
+    return nativeNode;
   },
 });
 

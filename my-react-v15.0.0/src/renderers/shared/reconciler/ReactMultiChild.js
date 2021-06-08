@@ -1,9 +1,28 @@
 // ReactMultiChild.js
-var ReactChildReconciler = require('ReactChildReconciler')
-var ReactReconciler = require('ReactReconciler')
+var ReactChildReconciler = require("ReactChildReconciler");
+var ReactReconciler = require("ReactReconciler");
 
 var ReactMultiChild = {
   Mixin: {
+    _reconcilerUpdateChildren: function (
+      prevChildren,
+      nextNestedChildrenElements,
+      removedNodes,
+      transaction,
+      context
+    ) {
+      var nextChildren;
+
+      nextChildren = flattenChildren(nextNestedChildrenElements);
+      ReactChildReconciler.updateChildren(
+        prevChildren,
+        nextChildren,
+        removedNodes,
+        transaction,
+        context
+      );
+      return nextChildren;
+    },
     _reconcilerInstantiateChildren: function (
       nestedChildren,
       transaction,
@@ -41,6 +60,85 @@ var ReactMultiChild = {
       }
 
       return mountImages;
+    },
+    updateChildren: function (
+      nextNestedChildrenElements,
+      transaction,
+      context
+    ) {
+      this._updateChildren(nextNestedChildrenElements, transaction, context);
+    },
+    _updateChildren: function (
+      nextNestedChildrenElements,
+      transaction,
+      context
+    ) {
+      var prevChildren = this._renderedChildren;
+      var removedNodes = {};
+      var nextChildren = this._reconcilerUpdateChildren(
+        prevChildren,
+        nextNestedChildrenElements,
+        removedNodes,
+        transaction,
+        context
+      );
+      if (!nextChildren && !prevChildren) {
+        return;
+      }
+      var updates = null;
+      var name;
+      // `nextIndex` will increment for each child in `nextChildren`, but
+      // `lastIndex` will be the last index visited in `prevChildren`.
+      var lastIndex = 0;
+      var nextIndex = 0;
+      var lastPlacedNode = null;
+      for (name in nextChildren) {
+        if (!nextChildren.hasOwnProperty(name)) {
+          continue;
+        }
+        var prevChild = prevChildren && prevChildren[name];
+        var nextChild = nextChildren[name];
+        if (prevChild === nextChild) {
+          updates = enqueue(
+            updates,
+            this.moveChild(prevChild, lastPlacedNode, nextIndex, lastIndex)
+          );
+          lastIndex = Math.max(prevChild._mountIndex, lastIndex);
+          prevChild._mountIndex = nextIndex;
+        } else {
+          if (prevChild) {
+            // Update `lastIndex` before `_mountIndex` gets unset by unmounting.
+            lastIndex = Math.max(prevChild._mountIndex, lastIndex);
+            // The `removedNodes` loop below will actually remove the child.
+          }
+          // The child must be instantiated before it's mounted.
+          updates = enqueue(
+            updates,
+            this._mountChildAtIndex(
+              nextChild,
+              lastPlacedNode,
+              nextIndex,
+              transaction,
+              context
+            )
+          );
+        }
+        nextIndex++;
+        lastPlacedNode = ReactReconciler.getNativeNode(nextChild);
+      }
+      // Remove children that are no longer present.
+      for (name in removedNodes) {
+        if (removedNodes.hasOwnProperty(name)) {
+          updates = enqueue(
+            updates,
+            this._unmountChild(prevChildren[name], removedNodes[name])
+          );
+        }
+      }
+      if (updates) {
+        processQueue(this, updates);
+      }
+      this._renderedChildren = nextChildren;
     },
   },
 };

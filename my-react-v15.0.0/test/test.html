@@ -16,7 +16,7 @@
       }
     </style>
   </head>
-  
+
   <body>
     <div id="root"></div>
     <!-- 简略实现 -->
@@ -29,11 +29,27 @@
     <!-- <script src="../build/offical/react-dom.js"></script> -->
     <script type="text/babel">
       var HelloMessage = React.createClass({
+        getInitialState: function () {
+          return { count: 0 };
+        },
         componentDidMount: function () {
-          console.log("componentDidMount..");
+          console.log("componentDidMount..2s后+1");
+          setTimeout(() => {
+            console.log('开始+1')
+            this.setState({ count: this.state.count + 1 })
+          }, 2000)
+        },
+        onClick: function(){
+          console.log('onClick..')
+          this.setState({ count: this.state.count + 1})
         },
         render: function () {
-          return <div>Hello {this.props.name}</div>;
+          return (
+            <div>
+              <p>count={this.state.count}</p>
+              <button onClick={this.onClick.bind(this)}>+1</button>
+            </div>
+          );
         },
       });
 

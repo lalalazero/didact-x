@@ -103,7 +103,10 @@
 
   // ReactNoopUpdateQueue.js
   var ReactNoopUpdateQueue$1 = {
-    // todo
+    
+    enqueueSetState: function(publicInstance, partialState) {
+      console.warn('ReactNoopUpdateQueue.enqueueSetState 被调用了，这里啥都不会做');
+    }
   };
 
   var ReactNoopUpdateQueue_1 = ReactNoopUpdateQueue$1;
@@ -120,6 +123,15 @@
   }
 
   ReactComponent$1.prototype.isReactComponent = {};
+
+  ReactComponent$1.prototype.setState = function(partialState, callback) {
+    console.log('prototype.setState called...');
+    this.updater.enqueueSetState(this, partialState);
+
+    if(callback) {
+      this.updater.enqueueSetState(this, callback, 'setState');
+    }
+  };
 
 
 

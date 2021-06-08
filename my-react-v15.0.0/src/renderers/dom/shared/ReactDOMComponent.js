@@ -1,8 +1,8 @@
 // ReactDOMComponent.js
 
-var ReactMultiChild = require('ReactMultiChild')
-var DOMNamespaces = require('DOMNamespaces')
-var DOMLazyTree = require('DOMLazyTree')
+var ReactMultiChild = require("ReactMultiChild");
+var DOMNamespaces = require("DOMNamespaces");
+var DOMLazyTree = require("DOMLazyTree");
 
 var globalIdCounter = 1;
 var CONTENT_TYPES = { string: true, number: true };
@@ -27,7 +27,6 @@ function ReactDOMComponent(element) {
 
 ReactDOMComponent.displayName = "ReactDOMComponent";
 ReactDOMComponent.Mixin = {
-  _updateDOMProperties: function (lastProps, nextProps, transaction) {},
   mountComponent: function (
     transaction,
     nativeParent,
@@ -127,9 +126,6 @@ ReactDOMComponent.Mixin = {
 
     return mountImage;
   },
-  receiveComponent: function () {
-    console.log("receiveComponent todo..");
-  },
   _createInitialChildren: function (transaction, props, context, lazyTree) {
     // Intentional use of != to avoid catching zero/false.
     var innerHTML = props.dangerouslySetInnerHTML;
@@ -159,6 +155,103 @@ ReactDOMComponent.Mixin = {
           DOMLazyTree.queueChild(lazyTree, mountImages[i]);
         }
       }
+    }
+  },
+  receiveComponent: function (nextElement, transaction, context) {
+    var prevElement = this._currentElement;
+    this._currentElement = nextElement;
+    this.updateComponent(transaction, prevElement, nextElement, context);
+  },
+  /**
+   * Updates a native DOM component after it has already been allocated and
+   * attached to the DOM. Reconciles the root DOM node, then recurses.
+   *
+   * @param {ReactReconcileTransaction} transaction
+   * @param {ReactElement} prevElement
+   * @param {ReactElement} nextElement
+   * @internal
+   * @overridable
+   */
+  updateComponent: function (transaction, prevElement, nextElement, context) {
+    var lastProps = prevElement.props;
+    var nextProps = this._currentElement.props;
+
+    switch (
+      this._tag
+      // case "button":
+      // lastProps = ReactDOMButton.getNativeProps(this, lastProps);
+      // nextProps = ReactDOMButton.getNativeProps(this, nextProps);
+      // break;
+      // case "input":
+      //   ReactDOMInput.updateWrapper(this);
+      //   lastProps = ReactDOMInput.getNativeProps(this, lastProps);
+      //   nextProps = ReactDOMInput.getNativeProps(this, nextProps);
+      //   break;
+      // case "option":
+      //   lastProps = ReactDOMOption.getNativeProps(this, lastProps);
+      //   nextProps = ReactDOMOption.getNativeProps(this, nextProps);
+      //   break;
+      // case "select":
+      //   lastProps = ReactDOMSelect.getNativeProps(this, lastProps);
+      //   nextProps = ReactDOMSelect.getNativeProps(this, nextProps);
+      //   break;
+      // case "textarea":
+      //   ReactDOMTextarea.updateWrapper(this);
+      //   lastProps = ReactDOMTextarea.getNativeProps(this, lastProps);
+      //   nextProps = ReactDOMTextarea.getNativeProps(this, nextProps);
+      //   break;
+    ) {
+    }
+
+    // assertValidProps(this, nextProps);
+    // this._updateDOMProperties(lastProps, nextProps, transaction);
+    this._updateDOMChildren(lastProps, nextProps, transaction, context);
+
+    if (this._tag === "select") {
+      // <select> value update needs to occur after <option> children
+      // reconciliation
+      // transaction.getReactMountReady().enqueue(postUpdateSelectWrapper, this);
+    }
+  },
+  _updateDOMChildren: function (lastProps, nextProps, transaction, context) {
+    var lastContent = CONTENT_TYPES[typeof lastProps.children]
+      ? lastProps.children
+      : null;
+    var nextContent = CONTENT_TYPES[typeof nextProps.children]
+      ? nextProps.children
+      : null;
+
+    var lastHtml =
+      lastProps.dangerouslySetInnerHTML &&
+      lastProps.dangerouslySetInnerHTML.__html;
+    var nextHtml =
+      nextProps.dangerouslySetInnerHTML &&
+      nextProps.dangerouslySetInnerHTML.__html;
+
+    // Note the use of `!=` which checks for null or undefined.
+    var lastChildren = lastContent != null ? null : lastProps.children;
+    var nextChildren = nextContent != null ? null : nextProps.children;
+
+    // If we're switching from children to content/html or vice versa, remove
+    // the old content
+    var lastHasContentOrHtml = lastContent != null || lastHtml != null;
+    var nextHasContentOrHtml = nextContent != null || nextHtml != null;
+    if (lastChildren != null && nextChildren == null) {
+      this.updateChildren(null, transaction, context);
+    } else if (lastHasContentOrHtml && !nextHasContentOrHtml) {
+      this.updateTextContent("");
+    }
+
+    if (nextContent != null) {
+      if (lastContent !== nextContent) {
+        this.updateTextContent("" + nextContent);
+      }
+    } else if (nextHtml != null) {
+      if (lastHtml !== nextHtml) {
+        this.updateMarkup("" + nextHtml);
+      }
+    } else if (nextChildren != null) {
+      this.updateChildren(nextChildren, transaction, context);
     }
   },
 };

@@ -51,7 +51,17 @@ function insertTreeChildren(tree) {
   console.log('insertTreeChildren enableLazy', enableLazy)
 }
 
+function queueText(tree, text) {
+  if(enableLazy) {
+    tree.text = text;
+  }else{
+    tree.node.textContent = text;
+  }
+}
+
+
 DOMLazyTree.queueChild = queueChild;
 DOMLazyTree.insertTreeBefore = insertTreeBefore;
+DOMLazyTree.queueText = queueText;
 
 module.exports = DOMLazyTree;
