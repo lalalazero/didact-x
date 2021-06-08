@@ -34,7 +34,7 @@ ReactDOMComponent.Mixin = {
     nativeContainerInfo,
     context
   ) {
-    console.log("enter --> ReactDOMComponent.mountComponent");
+    // console.log("enter --> ReactDOMComponent.mountComponent");
     this._rootNodeID = globalIdCounter++;
     this._domID = nativeContainerInfo._idCounter++;
     this._nativeParent = nativeParent;

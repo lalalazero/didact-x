@@ -14,6 +14,10 @@
       context
     ) {
       console.log("enter --> ReactReconciler.mountComponent");
+      console.log('当前的 instance', internalInstance);
+      console.log('当前的 instance._currentElement.type', internalInstance._currentElement.type);
+      console.log('当前的 instance._currentElement', internalInstance._currentElement);
+      console.log('--------------------------------------------');
       var markup = internalInstance.mountComponent(
         transaction,
         nativeParent,
@@ -589,7 +593,7 @@
       typeof navigator.userAgent === "string" &&
       /\bEdge\/\d/.test(navigator.userAgent));
 
-  console.log("enableLazy", enableLazy);
+  // console.log("enableLazy", enableLazy);
 
   function DOMLazyTree$3(node) {
     return {
@@ -602,10 +606,11 @@
 
   function queueChild(parentTree, childTree) {
     if (enableLazy) {
+      console.log('queueChild enableLazy');
       parentTree.children.push(childTree);
     } else {
-      console.log("parentTree.node", parentTree.node);
-      console.log("childTree.node", childTree.node);
+      // console.log("parentTree.node", parentTree.node);
+      // console.log("childTree.node", childTree.node);
       parentTree.node.appendChild(childTree.node);
     }
   }
@@ -616,10 +621,20 @@
     // is properly populated first, breaking out of our lazy approach for just
     // this level.
     if (tree.node.nodeType === 11) {
+      insertTreeChildren();
       parentNode.insertBefore(tree.node, referenceNode);
     } else {
       parentNode.insertBefore(tree.node, referenceNode);
+      insertTreeChildren();
     }
+  }
+
+  function insertTreeChildren(tree) {
+    if (!enableLazy) {
+      return;
+    }
+
+    console.log('insertTreeChildren enableLazy', enableLazy);
   }
 
   DOMLazyTree$3.queueChild = queueChild;
@@ -991,7 +1006,7 @@
       nativeContainerInfo,
       context
     ) {
-      console.log("enter --> ReactDOMComponent.mountComponent");
+      // console.log("enter --> ReactDOMComponent.mountComponent");
       this._rootNodeID = globalIdCounter++;
       this._domID = nativeContainerInfo._idCounter++;
       this._nativeParent = nativeParent;
@@ -1145,7 +1160,7 @@
       nativeContainerInfo,
       context
     ) {
-      console.log("enter ---> ReactDOMTextComponent.mountComponent");
+      // console.log("enter ---> ReactDOMTextComponent.mountComponent");
 
       var domID = nativeContainerInfo._idCounter++;
       var openingValue = " react-text: " + domID + " ";

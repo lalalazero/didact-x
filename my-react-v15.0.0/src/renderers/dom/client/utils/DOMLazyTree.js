@@ -7,7 +7,7 @@ var enableLazy =
     typeof navigator.userAgent === "string" &&
     /\bEdge\/\d/.test(navigator.userAgent));
 
-console.log("enableLazy", enableLazy);
+// console.log("enableLazy", enableLazy);
 
 function DOMLazyTree(node) {
   return {
@@ -20,10 +20,11 @@ function DOMLazyTree(node) {
 
 function queueChild(parentTree, childTree) {
   if (enableLazy) {
+    console.log('queueChild enableLazy')
     parentTree.children.push(childTree);
   } else {
-    console.log("parentTree.node", parentTree.node);
-    console.log("childTree.node", childTree.node);
+    // console.log("parentTree.node", parentTree.node);
+    // console.log("childTree.node", childTree.node);
     parentTree.node.appendChild(childTree.node);
   }
 }
@@ -46,6 +47,8 @@ function insertTreeChildren(tree) {
   if (!enableLazy) {
     return;
   }
+
+  console.log('insertTreeChildren enableLazy', enableLazy)
 }
 
 DOMLazyTree.queueChild = queueChild;

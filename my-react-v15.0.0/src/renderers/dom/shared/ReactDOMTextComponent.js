@@ -25,7 +25,7 @@ Object.assign(ReactDOMTextComponent.prototype, {
     nativeContainerInfo,
     context
   ) {
-    console.log("enter ---> ReactDOMTextComponent.mountComponent");
+    // console.log("enter ---> ReactDOMTextComponent.mountComponent");
 
     var domID = nativeContainerInfo._idCounter++;
     var openingValue = " react-text: " + domID + " ";
