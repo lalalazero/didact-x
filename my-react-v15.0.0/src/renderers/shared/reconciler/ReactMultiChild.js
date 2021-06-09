@@ -1,9 +1,44 @@
 // ReactMultiChild.js
 var ReactChildReconciler = require("ReactChildReconciler");
 var ReactReconciler = require("ReactReconciler");
+var flattenChildren = require("flattenChildren");
+var ReactChildReconciler = require("ReactChildReconciler");
+
+var ReactMultiChildUpdateTypes = {
+  MOVE_EXISTING: 'move',
+}
+
+function enqueue(queue, update) {
+  if (update) {
+    queue = queue || [];
+    queue.push(update);
+  }
+
+  return queue;
+}
+
+function makeMove(child, afterNode, toIndex) {
+  // NOTE: Null values reduce hidden classes.
+  return {
+    type: ReactMultiChildUpdateTypes.MOVE_EXISTING,
+    content: null,
+    fromIndex: child._mountIndex,
+    fromNode: ReactReconciler.getNativeNode(child),
+    toIndex: toIndex,
+    afterNode: afterNode,
+  };
+}
 
 var ReactMultiChild = {
   Mixin: {
+    moveChild: function(child, afterNode, toIndex, lastIndex) {
+      // If the index of `child` is less than `lastIndex`, then it needs to
+      // be moved. Otherwise, we do not need to move it because a child will be
+      // inserted or moved before `child`.
+      if (child._mountIndex < lastIndex) {
+        return makeMove(child, afterNode, toIndex);
+      }
+    },
     _reconcilerUpdateChildren: function (
       prevChildren,
       nextNestedChildrenElements,
@@ -127,20 +162,22 @@ var ReactMultiChild = {
         lastPlacedNode = ReactReconciler.getNativeNode(nextChild);
       }
       // Remove children that are no longer present.
-      for (name in removedNodes) {
-        if (removedNodes.hasOwnProperty(name)) {
-          updates = enqueue(
-            updates,
-            this._unmountChild(prevChildren[name], removedNodes[name])
-          );
-        }
-      }
-      if (updates) {
-        processQueue(this, updates);
-      }
+      // 省略这部分，目前暂时不涉及
+      // for (name in removedNodes) {
+      //   if (removedNodes.hasOwnProperty(name)) {
+      //     updates = enqueue(
+      //       updates,
+      //       this._unmountChild(prevChildren[name], removedNodes[name])
+      //     );
+      //   }
+      // }
+      // if (updates) {
+      //   processQueue(this, updates);
+      // }
       this._renderedChildren = nextChildren;
     },
   },
+  
 };
 
 module.exports = ReactMultiChild;

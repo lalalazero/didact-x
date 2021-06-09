@@ -11,10 +11,11 @@ var ReactReconciler = {
   receiveComponent: function(internalInstance, nextElement, transaction, context) {
     var prevElement = internalInstance._currentElement;
 
-    if (nextElement === prevElement && context === internalInstance._context) {
-      console.log('进入了 receiveComponent 但是不用做什么东西')
-      return
-    }
+    // if (nextElement === prevElement && context === internalInstance._context) {
+    // 这里有点问题，先暂时注解掉
+    //   console.log('进入了 receiveComponent 但是不用做什么东西')
+    //   return
+    // }
 
     internalInstance.receiveComponent(nextElement, transaction, context)
   },
@@ -53,6 +54,9 @@ var ReactReconciler = {
    */
   performUpdateIfNecessary: function (internalInstance, transaction) {
     internalInstance.performUpdateIfNecessary(transaction);
+  },
+  getNativeNode: function(internalInstance) {
+    return internalInstance.getNativeNode();
   },
 };
 

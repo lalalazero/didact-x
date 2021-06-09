@@ -315,6 +315,9 @@ var ReactCompositeComponentMixin = {
     var prevRenderedElement = prevComponentInstance._currentElement;
     var nextRenderedElement = this._renderValidatedComponent();
     if (shouldUpdateReactComponent(prevRenderedElement, nextRenderedElement)) {
+      // setState() 更新 { count: 1 } 的时候
+      // 这里传过去的 instance 的 _currentElement 和 nextRenderedElement 是相同的，导致直接 return 了。。不太对
+      // 还需要对 ReactDOMTree 做处理，之前都是直接省略的 T_T
       ReactReconciler.receiveComponent(
         prevComponentInstance,
         nextRenderedElement,
@@ -456,6 +459,9 @@ var ReactCompositeComponentMixin = {
     }
 
     return nextState;
+  },
+  getNativeNode: function() {
+    return ReactReconciler.getNativeNode(this._renderedComponent);
   },
 };
 var ReactCompositeComponent = {

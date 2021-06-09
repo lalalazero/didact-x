@@ -30,7 +30,10 @@ const plugins = [commonjs(), alias({
         { find: 'ReactChildReconciler', replacement: 'src/renderers/shared/reconciler/ReactChildReconciler.js'},
         { find: 'traverseAllChildren', replacement: 'src/shared/utils/traverseAllChildren.js'},
         { find: 'ReactDefaultInjection', replacement: 'src/renderers/dom/shared/ReactDefaultInjection.js'},
-        { find: 'shouldUpdateReactComponent', replacement: 'src/renderers/shared/reconciler/shouldUpdateReactComponent.js'}
+        { find: 'shouldUpdateReactComponent', replacement: 'src/renderers/shared/reconciler/shouldUpdateReactComponent.js'},
+        { find: 'flattenChildren', replacement: 'src/shared/utils/flattenChildren.js'},
+        { find: 'DOMChildrenOperations', replacement: 'src/renderers/dom/client/utils/DOMChildrenOperations.js'},
+        { find: 'ReactDOMComponentTree', replacement: 'src/renderers/dom/client/ReactDOMComponentTree.js'}
     ]
 })]
 

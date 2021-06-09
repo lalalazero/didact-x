@@ -5,7 +5,7 @@
 }(this, (function () { 'use strict';
 
   // ReactReconciler.js
-  var ReactReconciler$4 = {
+  var ReactReconciler$5 = {
     /**
      * Update a component using a new element
      * 
@@ -15,12 +15,13 @@
      * @param {*} context 
      */
     receiveComponent: function(internalInstance, nextElement, transaction, context) {
-      var prevElement = internalInstance._currentElement;
+      internalInstance._currentElement;
 
-      if (nextElement === prevElement && context === internalInstance._context) {
-        console.log('进入了 receiveComponent 但是不用做什么东西');
-        return
-      }
+      // if (nextElement === prevElement && context === internalInstance._context) {
+      // 这里有点问题，先暂时注解掉
+      //   console.log('进入了 receiveComponent 但是不用做什么东西')
+      //   return
+      // }
 
       internalInstance.receiveComponent(nextElement, transaction, context);
     },
@@ -60,9 +61,12 @@
     performUpdateIfNecessary: function (internalInstance, transaction) {
       internalInstance.performUpdateIfNecessary(transaction);
     },
+    getNativeNode: function(internalInstance) {
+      return internalInstance.getNativeNode();
+    },
   };
 
-  var ReactReconciler_1 = ReactReconciler$4;
+  var ReactReconciler_1 = ReactReconciler$5;
 
   // ReactDOMContainerInfo.js
   var DOC_NODE_TYPE$1 = 9;
@@ -160,7 +164,7 @@
 
   // ReactUpdates.js
 
-  var ReactReconciler$3 = ReactReconciler_1;
+  var ReactReconciler$4 = ReactReconciler_1;
   var dirtyComponents = [];
 
 
@@ -215,7 +219,7 @@
       //   console.time(markerName);
       // }
 
-      ReactReconciler$3.performUpdateIfNecessary(
+      ReactReconciler$4.performUpdateIfNecessary(
         component,
         // transaction.reconcileTransaction
       );
@@ -256,7 +260,7 @@
   var ReactUpdateQueue_1 = ReactUpdateQueue$1;
 
   // 其他辅助类库
-  var invariant$3 = function (condition, format, a, b, c, d, e, f) {
+  var invariant$4 = function (condition, format, a, b, c, d, e, f) {
     if (!condition) {
       var error;
       if (format === undefined) {
@@ -280,7 +284,7 @@
     }
   };
 
-  var invariant_1 = invariant$3;
+  var invariant_1 = invariant$4;
 
   // ReactCurrentOwner.js
   var ReactCurrentOwner$2 = {
@@ -414,7 +418,7 @@
    * @return {boolean} True if the existing instance should be updated.
    * @protected
    */
-  function shouldUpdateReactComponent$1(prevElement, nextElement) {
+  function shouldUpdateReactComponent$2(prevElement, nextElement) {
     var prevEmpty = prevElement === null || prevElement === false;
     var nextEmpty = nextElement === null || nextElement === false;
     if (prevEmpty || nextEmpty) {
@@ -434,18 +438,18 @@
     }
   }
 
-  var shouldUpdateReactComponent_1 = shouldUpdateReactComponent$1;
+  var shouldUpdateReactComponent_1 = shouldUpdateReactComponent$2;
 
   // ReactCompositeComponent.js
   var emptyObject$1 = emptyObject$2;
   var ReactUpdateQueue = ReactUpdateQueue_1;
   var ReactInstanceMap = ReactInstanceMap_1;
-  var invariant$2 = invariant_1;
+  var invariant$3 = invariant_1;
   var ReactCurrentOwner = ReactCurrentOwner_1;
   var ReactElement$2 = ReactElement_1;
   var ReactNodeTypes = ReactNodeTypes_1;
-  var ReactReconciler$2 = ReactReconciler_1;
-  var shouldUpdateReactComponent = shouldUpdateReactComponent_1;
+  var ReactReconciler$3 = ReactReconciler_1;
+  var shouldUpdateReactComponent$1 = shouldUpdateReactComponent_1;
 
   var nextMountID = 1;
   var ReactCompositeComponentMixin = {
@@ -529,7 +533,7 @@
         inst = Component(publicProps, publicContext, ReactUpdateQueue);
         if (inst == null || inst.render == null) {
           renderedElement = inst;
-          invariant$2(
+          invariant$3(
             inst === null || inst === false || ReactElement$2.isValidElement(inst),
             "%s(...): A valid React element (or null) must be returned. You may have " +
               "returned undefined, an array or some other invalid object.",
@@ -555,7 +559,7 @@
       if (initialState === undefined) {
         inst.state = initialState = null;
       }
-      invariant$2(
+      invariant$3(
         typeof initialState === "object" && !Array.isArray(initialState),
         "%s.state: must be set to an object or null",
         this.getName() || "ReactCompositeComponent"
@@ -740,21 +744,23 @@
       var prevComponentInstance = this._renderedComponent;
       var prevRenderedElement = prevComponentInstance._currentElement;
       var nextRenderedElement = this._renderValidatedComponent();
-      if (shouldUpdateReactComponent(prevRenderedElement, nextRenderedElement)) {
-        ReactReconciler$2.receiveComponent(
+      if (shouldUpdateReactComponent$1(prevRenderedElement, nextRenderedElement)) {
+        // setState() 更新 { count: 1 } 的时候
+        // 这里传过去的 instance 的 _currentElement 和 nextRenderedElement 是相同的，导致直接 return 了。。不太对
+        ReactReconciler$3.receiveComponent(
           prevComponentInstance,
           nextRenderedElement,
           transaction,
           // this._processChildContext(context)
         );
       } else {
-        var oldNativeNode = ReactReconciler$2.getNativeNode(prevComponentInstance);
-        ReactReconciler$2.unmountComponent(prevComponentInstance, false);
+        var oldNativeNode = ReactReconciler$3.getNativeNode(prevComponentInstance);
+        ReactReconciler$3.unmountComponent(prevComponentInstance, false);
 
         this._renderedNodeType = ReactNodeTypes.getType(nextRenderedElement);
         this._renderedComponent =
           this._instantiateReactComponent(nextRenderedElement);
-        var nextMarkup = ReactReconciler$2.mountComponent(
+        var nextMarkup = ReactReconciler$3.mountComponent(
           this._renderedComponent,
           transaction,
           this._nativeParent,
@@ -778,7 +784,7 @@
       } finally {
         ReactCurrentOwner.current = null;
       }
-      invariant$2(
+      invariant$3(
         // TODO: An `isValidNode` function would probably be more appropriate
         renderedComponent === null ||
           renderedComponent === false ||
@@ -815,7 +821,7 @@
       this._renderedNodeType = ReactNodeTypes.getType(renderedElement);
       this._renderedComponent = this._instantiateReactComponent(renderedElement);
 
-      var markup = ReactReconciler$2.mountComponent(
+      var markup = ReactReconciler$3.mountComponent(
         this._renderedComponent,
         transaction,
         nativeParent,
@@ -837,7 +843,7 @@
     },
     performUpdateIfNecessary: function (transaction) {
       if (this._pendingElement != null) {
-        ReactReconciler$2.receiveComponent(
+        ReactReconciler$3.receiveComponent(
           this,
           this._pendingElement,
           transaction,
@@ -882,6 +888,9 @@
       }
 
       return nextState;
+    },
+    getNativeNode: function() {
+      return ReactReconciler$3.getNativeNode(this._renderedComponent);
     },
   };
   var ReactCompositeComponent$1 = {
@@ -1014,12 +1023,12 @@
 
   // ReactMount.js
 
-  var ReactReconciler$1 = ReactReconciler_1;
+  var ReactReconciler$2 = ReactReconciler_1;
   var ReactDOMContainerInfo = ReactDOMContainerInfo_1;
   var instantiateReactComponent$1 = instantiateReactComponent_1;
   var ReactElement$1 = ReactElement_1;
   var ReactUpdates = ReactUpdates_1;
-  var invariant$1 = invariant_1;
+  var invariant$2 = invariant_1;
   var emptyObject = emptyObject$2;
   var DOMLazyTree$2 = DOMLazyTree_1;
 
@@ -1042,7 +1051,7 @@
     shouldReuseMarkup,
     context
   ) {
-    var markup = ReactReconciler$1.mountComponent(
+    var markup = ReactReconciler$2.mountComponent(
       wrapperInstance,
       transaction,
       null,
@@ -1099,7 +1108,7 @@
       shouldReuseMarkup,
       transaction
     ) {
-      invariant$1(
+      invariant$2(
         container &&
           (container.nodeType === ELEMENT_NODE_TYPE ||
             container.nodeType === DOC_NODE_TYPE ||
@@ -1182,7 +1191,7 @@
 
   var ReactElement = ReactElement_1;
 
-  function traverseAllChildren$1(children, callback, traverseContext) {
+  function traverseAllChildren$2(children, callback, traverseContext) {
     if (children == null) {
       return 0;
     }
@@ -1253,12 +1262,14 @@
     return index.toString(36);
   }
 
-  var traverseAllChildren_1 = traverseAllChildren$1;
+  var traverseAllChildren_1 = traverseAllChildren$2;
 
   // ReactChildReconciler.js
 
   var instantiateReactComponent = instantiateReactComponent_1;
-  var traverseAllChildren = traverseAllChildren_1;
+  var traverseAllChildren$1 = traverseAllChildren_1;
+  var shouldUpdateReactComponent = shouldUpdateReactComponent_1;
+  var ReactReconciler$1 = ReactReconciler_1;
 
   function instantiateChild(childInstances, child, name) {
     // We found a component instance.
@@ -1275,19 +1286,163 @@
       }
 
       var childInstances = {};
-      traverseAllChildren(nestedChildNodes, instantiateChild, childInstances);
+      traverseAllChildren$1(nestedChildNodes, instantiateChild, childInstances);
       return childInstances;
     },
+
+    /**
+     * Updates the rendered children and returns a new set of children.
+     *
+     * @param {?object} prevChildren Previously initialized set of children.
+     * @param {?object} nextChildren Flat child element maps.
+     * @param {ReactReconcileTransaction} transaction
+     * @param {object} context
+     * @return {?object} A new set of child instances.
+     * @internal
+     */
+     updateChildren: function(
+      prevChildren,
+      nextChildren,
+      removedNodes,
+      transaction,
+      context) {
+      // We currently don't have a way to track moves here but if we use iterators
+      // instead of for..in we can zip the iterators and check if an item has
+      // moved.
+      // TODO: If nothing has changed, return the prevChildren object so that we
+      // can quickly bailout if nothing has changed.
+      if (!nextChildren && !prevChildren) {
+        return;
+      }
+      var name;
+      var prevChild;
+      for (name in nextChildren) {
+        if (!nextChildren.hasOwnProperty(name)) {
+          continue;
+        }
+        prevChild = prevChildren && prevChildren[name];
+        var prevElement = prevChild && prevChild._currentElement;
+        var nextElement = nextChildren[name];
+        if (prevChild != null &&
+            shouldUpdateReactComponent(prevElement, nextElement)) {
+          ReactReconciler$1.receiveComponent(
+            prevChild, nextElement, transaction, context
+          );
+          nextChildren[name] = prevChild;
+        } else {
+          if (prevChild) {
+            console.warn('省略 unmount 逻辑，应该不会走这里，这里还没实现....');
+            // removedNodes[name] = ReactReconciler.getNativeNode(prevChild);
+            // ReactReconciler.unmountComponent(prevChild, false);
+          }
+          // The child must be instantiated before it's mounted.
+          var nextChildInstance = instantiateReactComponent(nextElement);
+          nextChildren[name] = nextChildInstance;
+        }
+      }
+      // Unmount children that are no longer present.
+      // for (name in prevChildren) {
+      //   if (prevChildren.hasOwnProperty(name) &&
+      //       !(nextChildren && nextChildren.hasOwnProperty(name))) {
+      //     prevChild = prevChildren[name];
+      //     removedNodes[name] = ReactReconciler.getNativeNode(prevChild);
+      //     ReactReconciler.unmountComponent(prevChild, false);
+      //   }
+      // }
+    },
+
+    /**
+     * Unmounts all rendered children. This should be used to clean up children
+     * when this component is unmounted.
+     *
+     * @param {?object} renderedChildren Previously initialized set of children.
+     * @internal
+     */
+    // unmountChildren: function(renderedChildren, safely) {
+    //   for (var name in renderedChildren) {
+    //     if (renderedChildren.hasOwnProperty(name)) {
+    //       var renderedChild = renderedChildren[name];
+    //       ReactReconciler.unmountComponent(renderedChild, safely);
+    //     }
+    //   }
+    // },
   };
 
   var ReactChildReconciler_1 = ReactChildReconciler$1;
 
+  var traverseAllChildren = traverseAllChildren_1;
+
+  /**
+   * @param {function} traverseContext Context passed through traversal.
+   * @param {?ReactComponent} child React child component.
+   * @param {!string} name String name of key path to child.
+   */
+  function flattenSingleChildIntoContext(traverseContext, child, name) {
+    // We found a component instance.
+    var result = traverseContext;
+    var keyUnique = (result[name] === undefined);
+    if (keyUnique && child != null) {
+      result[name] = child;
+    }
+  }
+
+  /**
+   * Flattens children that are typically specified as `props.children`. Any null
+   * children will not be included in the resulting object.
+   * @return {!object} flattened children keyed by name.
+   */
+  function flattenChildren$1(children) {
+    if (children == null) {
+      return children;
+    }
+    var result = {};
+    traverseAllChildren(children, flattenSingleChildIntoContext, result);
+    return result;
+  }
+
+  var flattenChildren_1 = flattenChildren$1;
+
   // ReactMultiChild.js
   var ReactChildReconciler = ReactChildReconciler_1;
   var ReactReconciler = ReactReconciler_1;
+  var flattenChildren = flattenChildren_1;
+  var ReactChildReconciler = ReactChildReconciler_1;
+
+  var ReactMultiChildUpdateTypes = {
+    MOVE_EXISTING: 'move',
+  };
+
+  function enqueue(queue, update) {
+    if (update) {
+      queue = queue || [];
+      queue.push(update);
+    }
+
+    return queue;
+  }
+
+  function makeMove(child, afterNode, toIndex) {
+    // NOTE: Null values reduce hidden classes.
+    return {
+      type: ReactMultiChildUpdateTypes.MOVE_EXISTING,
+      content: null,
+      fromIndex: child._mountIndex,
+      fromNode: ReactReconciler.getNativeNode(child),
+      toIndex: toIndex,
+      afterNode: afterNode,
+    };
+  }
 
   var ReactMultiChild$1 = {
     Mixin: {
+      moveChild: function(child, afterNode, toIndex, lastIndex) {
+        // If the index of `child` is less than `lastIndex`, then it needs to
+        // be moved. Otherwise, we do not need to move it because a child will be
+        // inserted or moved before `child`.
+        if (child._mountIndex < lastIndex) {
+          return makeMove(child, afterNode, toIndex);
+        }
+      },
       _reconcilerUpdateChildren: function (
         prevChildren,
         nextNestedChildrenElements,
@@ -1411,20 +1566,22 @@
           lastPlacedNode = ReactReconciler.getNativeNode(nextChild);
         }
         // Remove children that are no longer present.
-        for (name in removedNodes) {
-          if (removedNodes.hasOwnProperty(name)) {
-            updates = enqueue(
-              updates,
-              this._unmountChild(prevChildren[name], removedNodes[name])
-            );
-          }
-        }
-        if (updates) {
-          processQueue(this, updates);
-        }
+        // 省略这部分，目前暂时不涉及
+        // for (name in removedNodes) {
+        //   if (removedNodes.hasOwnProperty(name)) {
+        //     updates = enqueue(
+        //       updates,
+        //       this._unmountChild(prevChildren[name], removedNodes[name])
+        //     );
+        //   }
+        // }
+        // if (updates) {
+        //   processQueue(this, updates);
+        // }
         this._renderedChildren = nextChildren;
       },
     },
+    
   };
 
   var ReactMultiChild_1 = ReactMultiChild$1;
@@ -1438,11 +1595,81 @@
 
   var DOMNamespaces_1 = DOMNamespaces$1;
 
+  // ReactDOMComponentTree.js
+  var invariant$1 = invariant_1;
+
+
+  var internalInstanceKey =
+    "__reactInternalInstance$" + Math.random().toString(36).slice(2);
+  /**
+   * Drill down (through composites and empty components) until we get a native or
+   * native text component.
+   *
+   * This is pretty polymorphic but unavoidable with the current structure we have
+   * for `_renderedChildren`.
+   */
+  function getRenderedNativeOrTextFromComponent(component) {
+    var rendered;
+    while ((rendered = component._renderedComponent)) {
+      component = rendered;
+    }
+
+    return component;
+  }
+  var ReactDOMComponentTree$1 = {
+    precacheNode: function (inst, node) {
+      var nativeInst = getRenderedNativeOrTextFromComponent(inst);
+      nativeInst._nativeNode = node;
+      node[internalInstanceKey] = nativeInst;
+    },
+    getNodeFromInstance: getNodeFromInstance,
+  };
+
+
+  /**
+   * Given a ReactDOMComponent or ReactDOMTextComponent, return the corresponding
+   * DOM node.
+   */
+   function getNodeFromInstance(inst) {
+    // Without this first invariant, passing a non-DOM-component triggers the next
+    // invariant for a missing parent, which is super confusing.
+    invariant$1(
+      inst._nativeNode !== undefined,
+      'getNodeFromInstance: Invalid argument.'
+    );
+
+    if (inst._nativeNode) {
+      return inst._nativeNode;
+    }
+    while (!inst._nativeNode) {
+      invariant$1(
+        inst._nativeParent,
+        'React DOM tree root should always have a node reference.'
+      );
+      inst = inst._nativeParent;
+    }
+
+    // Now parents contains each ancestor that does *not* have a cached native
+    // node, and `inst` is the deepest ancestor that does.
+    // for (; parents.length; inst = parents.pop()) {
+      // precacheChildNodes(inst, inst._nativeNode);
+    // }
+
+    return inst._nativeNode;
+  }
+
+  var ReactDOMComponentTree_1 = ReactDOMComponentTree$1;
+
   // ReactDOMComponent.js
 
   var ReactMultiChild = ReactMultiChild_1;
   var DOMNamespaces = DOMNamespaces_1;
   var DOMLazyTree$1 = DOMLazyTree_1;
+  var ReactDOMComponentTree = ReactDOMComponentTree_1;
+
+
+  var getNode = ReactDOMComponentTree.getNodeFromInstance;
+
 
   var globalIdCounter = 1;
   var CONTENT_TYPES = { string: true, number: true };
@@ -1681,6 +1908,9 @@
         this.updateChildren(nextChildren, transaction, context);
       }
     },
+    getNativeNode: function () {
+      return getNode(this);
+    },
   };
   Object.assign(
     ReactDOMComponent$1.prototype,
@@ -1692,6 +1922,7 @@
 
   // ReactDOMTextComponent.js
   var DOMLazyTree = DOMLazyTree_1;
+  // var DOMChildrenOperations = require('DOMChildrenOperations')
 
   var ReactDOMTextComponent$1 = function (text) {
     // TODO: This is really a ReactText (ReactNode), not a ReactElement
@@ -1750,12 +1981,12 @@
           // and/or updateComponent to do the actual update for consistency with
           // other component types?
           this._stringText = nextStringText;
-          var commentNodes = this.getNativeNode();
-          DOMChildrenOperations.replaceDelimitedText(
-            commentNodes[0],
-            commentNodes[1],
-            nextStringText
-          );
+          // var commentNodes = this.getNativeNode();
+          // DOMChildrenOperations.replaceDelimitedText(
+          //   commentNodes[0],
+          //   commentNodes[1],
+          //   nextStringText
+          // );
         }
       }
     },
@@ -1765,14 +1996,14 @@
         return nativeNode;
       }
       if (!this._closingComment) {
-        var openingComment = ReactDOMComponentTree.getNodeFromInstance(this);
+        // var openingComment = ReactDOMComponentTree.getNodeFromInstance(this);
         var node = openingComment.nextSibling;
         while (true) {
-          invariant(
-            node != null,
-            "Missing closing comment for text component %s",
-            this._domID
-          );
+          // invariant(
+          //   node != null,
+          //   "Missing closing comment for text component %s",
+          //   this._domID
+          // );
           if (node.nodeType === 8 && node.nodeValue === " /react-text ") {
             this._closingComment = node;
             break;

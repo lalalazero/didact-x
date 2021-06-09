@@ -3,6 +3,11 @@
 var ReactMultiChild = require("ReactMultiChild");
 var DOMNamespaces = require("DOMNamespaces");
 var DOMLazyTree = require("DOMLazyTree");
+var ReactDOMComponentTree = require('ReactDOMComponentTree');
+
+
+var getNode = ReactDOMComponentTree.getNodeFromInstance;
+
 
 var globalIdCounter = 1;
 var CONTENT_TYPES = { string: true, number: true };
@@ -253,6 +258,9 @@ ReactDOMComponent.Mixin = {
     } else if (nextChildren != null) {
       this.updateChildren(nextChildren, transaction, context);
     }
+  },
+  getNativeNode: function () {
+    return getNode(this);
   },
 };
 Object.assign(
